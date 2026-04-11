@@ -30,6 +30,19 @@ export function GameSetup({
   const [newLabel, setNewLabel] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
   const [warnings, setWarnings] = useState<RotationWarning[]>([]);
+  const [editingGameId, setEditingGameId] = useState<string | null>(null);
+  const [editingLabel, setEditingLabel] = useState('');
+
+  const startEditingGame = (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    setEditingGameId(game.id);
+    setEditingLabel(game.label);
+  };
+
+  const saveGameLabel = (id: string) => {
+    if (editingLabel.trim()) onUpdateGame(id, { label: editingLabel.trim() });
+    setEditingGameId(null);
+  };
 
   const handleCreate = () => {
     if (!newLabel.trim()) return;
@@ -107,7 +120,28 @@ export function GameSetup({
               onClick={() => onSelectGame(g.id)}
             >
               <div className="game-card__info">
-                <span className="game-card__label">{g.label}</span>
+                {editingGameId === g.id ? (
+                  <input
+                    className="player-row__input"
+                    value={editingLabel}
+                    onChange={(e) => setEditingLabel(e.target.value)}
+                    onBlur={() => saveGameLabel(g.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveGameLabel(g.id);
+                      if (e.key === 'Escape') setEditingGameId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    className="game-card__label"
+                    onClick={(e) => startEditingGame(e, g)}
+                    title="Click to rename"
+                  >
+                    {g.label}
+                  </span>
+                )}
                 <span className="game-card__date">{g.date}</span>
               </div>
               <Button

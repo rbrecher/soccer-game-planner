@@ -192,7 +192,8 @@ body {
 .game-card--selected { border-color: #111; background: #fafafa; }
 
 .game-card__info { display: flex; flex-direction: column; gap: 2px; }
-.game-card__label { font-weight: 500; }
+.game-card__label { font-weight: 500; cursor: pointer; }
+.game-card__label:hover { text-decoration: underline; }
 .game-card__date { font-size: 13px; color: #888; }
 
 /* ── Availability Grid ───────────────────────────────────────── */
