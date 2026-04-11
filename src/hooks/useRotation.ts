@@ -142,10 +142,32 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
     [grid, reoptimize],
   );
 
+  /** Remove the lock on a field position slot and reoptimize */
+  const unlockSlot = useCallback(
+    (quarter: QuarterKey, half: HalfKey, position: PositionName): RotationWarning[] => {
+      if (!grid) return [];
+      const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
+      updatedGrid[quarter][half].positions[position] = { playerId: null, locked: false };
+      return reoptimize(updatedGrid);
+    },
+    [grid, reoptimize],
+  );
+
+  /** Remove the GK lock for a quarter and reoptimize */
+  const unlockGK = useCallback(
+    (quarter: QuarterKey): RotationWarning[] => {
+      if (!grid) return [];
+      const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
+      updatedGrid[quarter] = { ...updatedGrid[quarter], gkLocked: false };
+      return reoptimize(updatedGrid);
+    },
+    [grid, reoptimize],
+  );
+
   /** Clear all locks and regenerate from scratch */
   const resetGrid = useCallback((): RotationWarning[] => {
     return generateFresh();
   }, [generateFresh]);
 
-  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, resetGrid };
+  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid };
 }

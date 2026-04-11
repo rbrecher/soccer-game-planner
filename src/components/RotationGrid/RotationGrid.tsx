@@ -9,8 +9,10 @@ interface RotationGridProps {
   allPlayers: Player[];
   warnings: RotationWarning[];
   onLockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName, playerId: string) => void;
+  onUnlockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName) => void;
   onLockBench: (quarter: QuarterKey, half: HalfKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
+  onUnlockGK: (quarter: QuarterKey) => void;
   onReset: () => RotationWarning[];
 }
 
@@ -19,8 +21,10 @@ export function RotationGrid({
   allPlayers,
   warnings,
   onLockSlot,
+  onUnlockSlot,
   onLockBench,
   onLockGK,
+  onUnlockGK,
   onReset,
 }: RotationGridProps) {
   const [activeQuarter, setActiveQuarter] = useState<QuarterKey>('Q1');
@@ -82,8 +86,10 @@ export function RotationGrid({
         allPlayers={allPlayers}
         availability={game.availability}
         onLockSlot={handleLockSlot}
+        onUnlockSlot={onUnlockSlot}
         onLockBench={onLockBench}
         onLockGK={handleLockGK}
+        onUnlockGK={onUnlockGK}
       />
     </div>
   );

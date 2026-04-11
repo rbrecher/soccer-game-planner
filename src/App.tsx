@@ -24,7 +24,7 @@ export default function App() {
     selectGame,
   } = useGames(roster);
 
-  const { generateFresh, lockSlot, lockBench, lockGK, resetGrid } = useRotation({
+  const { generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid } = useRotation({
     players: roster,
     game: selectedGame,
     onGameUpdate: updateGame,
@@ -74,8 +74,10 @@ export default function App() {
             allPlayers={roster}
             warnings={rotationWarnings}
             onLockSlot={lockSlot}
+            onUnlockSlot={unlockSlot}
             onLockBench={lockBench}
             onLockGK={lockGK}
+            onUnlockGK={unlockGK}
             onReset={resetGrid}
           />
         )}

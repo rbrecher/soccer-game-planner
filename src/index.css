@@ -497,6 +497,13 @@ body {
 .modal__close:hover { background: #f0f0f0; color: #111; }
 .modal__body { overflow-y: auto; padding: 16px 20px 24px; }
 
+/* ── Modal clear action ──────────────────────────────────────── */
+.modal-clear {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eee;
+}
+
 /* ── Player Picker ───────────────────────────────────────────── */
 .player-picker__label { font-size: 13px; color: #888; margin: 0 0 10px; }
 

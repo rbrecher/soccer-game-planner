@@ -11,6 +11,7 @@ interface GoalieRowProps {
   availablePlayers: Player[];
   allPlayers: Player[];
   onOverride: (quarter: QuarterKey, playerId: string) => void;
+  onUnlockGK: (quarter: QuarterKey) => void;
 }
 
 export function GoalieRow({
@@ -20,6 +21,7 @@ export function GoalieRow({
   availablePlayers,
   allPlayers,
   onOverride,
+  onUnlockGK,
 }: GoalieRowProps) {
   const [open, setOpen] = useState(false);
   const gkPlayer = allPlayers.find((p) => p.id === gkPlayerId);
@@ -32,6 +34,11 @@ export function GoalieRow({
       <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
         Override GK
       </Button>
+      {gkLocked && (
+        <Button variant="ghost" size="sm" onClick={() => onUnlockGK(quarter)}>
+          Clear override
+        </Button>
+      )}
 
       {open && (
         <Modal title={`Override GK — ${quarter}`} onClose={() => setOpen(false)}>
