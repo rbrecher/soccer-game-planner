@@ -1,6 +1,6 @@
-import { FIELD_POSITIONS, HALVES, QUARTERS } from '../constants/game';
+import { FIELD_POSITIONS, SHIFTS, QUARTERS } from '../constants/game';
 import type {
-  HalfRotation,
+  ShiftRotation,
   Player,
   PlayerAvailability,
   PositionName,
@@ -11,7 +11,7 @@ import type {
 import type { BenchMap } from './assignBench';
 
 /**
- * Assigns field positions to players for each half-quarter.
+ * Assigns field positions to players for each shift within each quarter.
  * Goal: maximise position variety (each player plays as many different positions as possible).
  * Respects locked position assignments in existingGrid.
  */
@@ -32,22 +32,22 @@ export function assignPositions(
 
   for (const q of QUARTERS) {
     const gkId = gkMap[q];
-    const quarterGrid: { first: HalfRotation; second: HalfRotation } = {
-      first: buildEmptyHalf(),
-      second: buildEmptyHalf(),
+    const quarterGrid: { shift1: ShiftRotation; shift2: ShiftRotation } = {
+      shift1: buildEmptyShift(),
+      shift2: buildEmptyShift(),
     };
 
-    for (const half of HALVES) {
-      const benchIds = new Set(benchMap[q][half]);
-      const existingHalf = existingGrid[q]?.[half];
+    for (const shift of SHIFTS) {
+      const benchIds = new Set(benchMap[q][shift]);
+      const existingShift = existingGrid[q]?.[shift];
 
       // Collect locked position assignments
       const lockedPositions = new Map<PositionName, string>(); // position → playerId
       const lockedPlayers = new Set<string>(); // playerIds locked to a position
 
-      if (existingHalf) {
+      if (existingShift) {
         for (const pos of FIELD_POSITIONS) {
-          const slot = existingHalf.positions[pos];
+          const slot = existingShift.positions[pos];
           if (slot.locked && slot.playerId) {
             lockedPositions.set(pos, slot.playerId);
             lockedPlayers.add(slot.playerId);
@@ -78,17 +78,17 @@ export function assignPositions(
         return novelA - novelB; // hardest to fill first
       });
 
-      const assignedThisHalf = new Set<string>(lockedPlayers);
-      const halfPositions: Record<PositionName, SlotAssignment> = {} as Record<PositionName, SlotAssignment>;
+      const assignedThisShift = new Set<string>(lockedPlayers);
+      const shiftPositions: Record<PositionName, SlotAssignment> = {} as Record<PositionName, SlotAssignment>;
 
       // Copy locked assignments first
       for (const [pos, pid] of lockedPositions) {
-        halfPositions[pos] = { playerId: pid, locked: true };
+        shiftPositions[pos] = { playerId: pid, locked: true };
       }
 
       for (const pos of positionOrder) {
         const candidates = onFieldPlayers
-          .filter((p) => !assignedThisHalf.has(p.id))
+          .filter((p) => !assignedThisShift.has(p.id))
           .sort((a, b) => {
             const costA = positionHistory.get(a.id)?.get(pos) ?? 0;
             const costB = positionHistory.get(b.id)?.get(pos) ?? 0;
@@ -104,29 +104,29 @@ export function assignPositions(
 
         if (candidates.length > 0) {
           const chosen = candidates[0];
-          halfPositions[pos] = { playerId: chosen.id, locked: false };
-          assignedThisHalf.add(chosen.id);
+          shiftPositions[pos] = { playerId: chosen.id, locked: false };
+          assignedThisShift.add(chosen.id);
 
           const hist = positionHistory.get(chosen.id)!;
           hist.set(pos, (hist.get(pos) ?? 0) + 1);
         } else {
-          halfPositions[pos] = { playerId: null, locked: false };
+          shiftPositions[pos] = { playerId: null, locked: false };
         }
       }
 
       // GK slot
-      halfPositions['GK'] = { playerId: gkId ?? null, locked: false };
+      shiftPositions['GK'] = { playerId: gkId ?? null, locked: false };
 
-      // Bench for this half
+      // Bench for this shift
       const benchSlots: SlotAssignment[] = Array.from(benchIds).map((pid) => {
-        const wasLocked = existingGrid[q]?.[half]?.bench.find(
+        const wasLocked = existingGrid[q]?.[shift]?.bench.find(
           (s) => s.playerId === pid && s.locked,
         );
         return { playerId: pid, locked: wasLocked ? true : false };
       });
 
-      quarterGrid[half] = {
-        positions: halfPositions,
+      quarterGrid[shift] = {
+        positions: shiftPositions,
         bench: benchSlots,
       };
     }
@@ -134,15 +134,15 @@ export function assignPositions(
     grid[q] = {
       gkPlayerId: gkId ?? null,
       gkLocked: existingGrid[q]?.gkLocked ?? false,
-      first: quarterGrid.first,
-      second: quarterGrid.second,
+      shift1: quarterGrid.shift1,
+      shift2: quarterGrid.shift2,
     };
   }
 
   return grid;
 }
 
-function buildEmptyHalf(): HalfRotation {
+function buildEmptyShift(): ShiftRotation {
   const positions = {} as Record<PositionName, SlotAssignment>;
   return { positions, bench: [] };
 }

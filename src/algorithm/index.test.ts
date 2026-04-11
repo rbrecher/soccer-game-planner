@@ -1,35 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import { generateRotation } from './index';
 import { makeFullRoster, makeGame } from '../test-utils/fixtures';
-import { FIELD_POSITIONS, QUARTERS, HALVES } from '../constants/game';
+import { FIELD_POSITIONS, QUARTERS, SHIFTS } from '../constants/game';
 import type { RotationGrid } from '../types';
 
 describe('generateRotation', () => {
-  it('produces a grid with the correct shape for all quarters and halves', () => {
+  it('produces a grid with the correct shape for all quarters and shifts', () => {
     const players = makeFullRoster(10);
     const game = makeGame(players);
     const { grid } = generateRotation(players, game);
 
     for (const q of QUARTERS) {
       expect(grid[q]).toBeDefined();
-      expect(grid[q].first).toBeDefined();
-      expect(grid[q].second).toBeDefined();
-      expect(Array.isArray(grid[q].first.bench)).toBe(true);
-      expect(Array.isArray(grid[q].second.bench)).toBe(true);
-      for (const half of HALVES) {
+      expect(grid[q].shift1).toBeDefined();
+      expect(grid[q].shift2).toBeDefined();
+      expect(Array.isArray(grid[q].shift1.bench)).toBe(true);
+      expect(Array.isArray(grid[q].shift2.bench)).toBe(true);
+      for (const shift of SHIFTS) {
         for (const pos of FIELD_POSITIONS) {
-          expect(grid[q][half].positions[pos]).toBeDefined();
+          expect(grid[q][shift].positions[pos]).toBeDefined();
         }
       }
     }
   });
 
-  it('never assigns the same player twice in a single half-quarter (positions + bench + GK)', () => {
+  it('never assigns the same player twice in a single shift (positions + bench + GK)', () => {
     const players = makeFullRoster(10);
     const { grid } = generateRotation(players, makeGame(players));
 
     for (const q of QUARTERS) {
-      for (const half of HALVES) {
+      for (const shift of SHIFTS) {
         const seen = new Set<string>();
 
         const gkId = grid[q].gkPlayerId;
@@ -38,13 +38,13 @@ describe('generateRotation', () => {
           seen.add(gkId);
         }
         for (const pos of FIELD_POSITIONS) {
-          const pid = grid[q][half].positions[pos].playerId;
+          const pid = grid[q][shift].positions[pos].playerId;
           if (pid) {
             expect(seen.has(pid)).toBe(false);
             seen.add(pid);
           }
         }
-        for (const slot of grid[q][half].bench) {
+        for (const slot of grid[q][shift].bench) {
           if (slot.playerId) {
             expect(seen.has(slot.playerId)).toBe(false);
             seen.add(slot.playerId);
@@ -61,10 +61,10 @@ describe('generateRotation', () => {
     for (const q of QUARTERS) {
       const gkId = grid[q].gkPlayerId;
       if (!gkId) continue;
-      const firstBenchIds = grid[q].first.bench.map((s) => s.playerId);
-      const secondBenchIds = grid[q].second.bench.map((s) => s.playerId);
-      expect(firstBenchIds).not.toContain(gkId);
-      expect(secondBenchIds).not.toContain(gkId);
+      const shift1BenchIds = grid[q].shift1.bench.map((s) => s.playerId);
+      const shift2BenchIds = grid[q].shift2.bench.map((s) => s.playerId);
+      expect(shift1BenchIds).not.toContain(gkId);
+      expect(shift2BenchIds).not.toContain(gkId);
     }
   });
 
@@ -73,15 +73,15 @@ describe('generateRotation', () => {
     const game = makeGame(players);
     const { grid: initial } = generateRotation(players, game);
 
-    const lockedPid = initial.Q1.first.positions['Striker'].playerId;
+    const lockedPid = initial.Q1.shift1.positions['Striker'].playerId;
     if (!lockedPid) return; // guard
 
     const existingGrid: RotationGrid = JSON.parse(JSON.stringify(initial));
-    existingGrid.Q1.first.positions['Striker'] = { playerId: lockedPid, locked: true };
+    existingGrid.Q1.shift1.positions['Striker'] = { playerId: lockedPid, locked: true };
 
     const { grid: reopt } = generateRotation(players, game, existingGrid);
-    expect(reopt.Q1.first.positions['Striker'].playerId).toBe(lockedPid);
-    expect(reopt.Q1.first.positions['Striker'].locked).toBe(true);
+    expect(reopt.Q1.shift1.positions['Striker'].playerId).toBe(lockedPid);
+    expect(reopt.Q1.shift1.positions['Striker'].locked).toBe(true);
   });
 
   it('preserves a locked bench entry when re-run with existingGrid', () => {
@@ -89,17 +89,17 @@ describe('generateRotation', () => {
     const game = makeGame(players);
     const { grid: initial } = generateRotation(players, game);
 
-    const firstBench = initial.Q1.first.bench;
+    const firstBench = initial.Q1.shift1.bench;
     if (firstBench.length === 0) return; // guard — needs a benched player
     const lockedPid = firstBench[0].playerId!;
 
     const existingGrid: RotationGrid = JSON.parse(JSON.stringify(initial));
-    existingGrid.Q1.first.bench = [{ playerId: lockedPid, locked: true }];
+    existingGrid.Q1.shift1.bench = [{ playerId: lockedPid, locked: true }];
 
     const { grid: reopt } = generateRotation(players, game, existingGrid);
-    const benchPids = reopt.Q1.first.bench.map((s) => s.playerId);
+    const benchPids = reopt.Q1.shift1.bench.map((s) => s.playerId);
     expect(benchPids).toContain(lockedPid);
-    const lockedSlot = reopt.Q1.first.bench.find((s) => s.playerId === lockedPid);
+    const lockedSlot = reopt.Q1.shift1.bench.find((s) => s.playerId === lockedPid);
     expect(lockedSlot?.locked).toBe(true);
   });
 

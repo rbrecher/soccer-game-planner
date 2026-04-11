@@ -1,5 +1,5 @@
 export type QuarterKey = 'Q1' | 'Q2' | 'Q3' | 'Q4';
-export type HalfKey = 'first' | 'second';
+export type ShiftKey = 'shift1' | 'shift2';
 export type PositionName =
   | 'GK'
   | 'Left Wing'
@@ -26,7 +26,7 @@ export interface SlotAssignment {
   locked: boolean;
 }
 
-export interface HalfRotation {
+export interface ShiftRotation {
   positions: Record<PositionName, SlotAssignment>;
   bench: SlotAssignment[];
 }
@@ -34,8 +34,8 @@ export interface HalfRotation {
 export interface QuarterRotation {
   gkPlayerId: string | null;
   gkLocked: boolean;
-  first: HalfRotation;
-  second: HalfRotation;
+  shift1: ShiftRotation;
+  shift2: ShiftRotation;
 }
 
 export type RotationGrid = Record<QuarterKey, QuarterRotation>;

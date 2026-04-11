@@ -1,7 +1,7 @@
 import type { AppStorage } from '../types';
 
 const STORAGE_KEY = 'soccer-planner-v1';
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 const defaultStorage: AppStorage = {
   schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -14,9 +14,28 @@ function migrateIfNeeded(raw: unknown): AppStorage {
 
   const data = raw as Record<string, unknown>;
 
-  // v1 is the only version; future migrations go here
   if (!data.schemaVersion) {
     data.schemaVersion = 1;
+  }
+
+  // v1 → v2: rename QuarterRotation properties first/second → shift1/shift2
+  if ((data.schemaVersion as number) < 2) {
+    if (Array.isArray(data.games)) {
+      data.games = (data.games as unknown[]).map((game) => {
+        if (!game || typeof game !== 'object') return game;
+        const g = game as Record<string, unknown>;
+        if (!g.rotation || typeof g.rotation !== 'object') return g;
+        const rotation = g.rotation as Record<string, Record<string, unknown>>;
+        const newRotation: Record<string, unknown> = {};
+        for (const q of ['Q1', 'Q2', 'Q3', 'Q4']) {
+          if (!rotation[q]) continue;
+          const { first, second, ...rest } = rotation[q];
+          newRotation[q] = { ...rest, shift1: first, shift2: second };
+        }
+        return { ...g, rotation: newRotation };
+      });
+    }
+    data.schemaVersion = 2;
   }
 
   return {

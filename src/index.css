@@ -282,25 +282,25 @@ body {
 .goalie-row__name { font-weight: 600; flex: 1; }
 
 /* ── Quarter Panel ───────────────────────────────────────────── */
-.quarter-panel__halves {
+.quarter-panel__shifts {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 @media (max-width: 480px) {
-  .quarter-panel__halves { grid-template-columns: 1fr; }
+  .quarter-panel__shifts { grid-template-columns: 1fr; }
 }
 
-/* ── Half Panel ──────────────────────────────────────────────── */
-.half-panel {
+/* ── Shift Panel ─────────────────────────────────────────────── */
+.shift-panel {
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 10px;
   padding: 12px;
 }
 
-.half-panel__title {
+.shift-panel__title {
   font-size: 13px;
   font-weight: 600;
   color: #888;
@@ -309,7 +309,7 @@ body {
   margin: 0 0 10px;
 }
 
-.half-panel__bench {
+.shift-panel__bench {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px dashed #e5e5e5;
@@ -318,7 +318,7 @@ body {
   gap: 6px;
   align-items: center;
 }
-.half-panel__bench-label { font-size: 12px; color: #aaa; text-transform: uppercase; width: 100%; }
+.shift-panel__bench-label { font-size: 12px; color: #aaa; text-transform: uppercase; width: 100%; }
 
 .bench-tag {
   display: inline-block;

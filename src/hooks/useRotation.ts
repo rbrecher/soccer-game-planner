@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type {
   Game,
-  HalfKey,
+  ShiftKey,
   Player,
   PositionName,
   QuarterKey,
@@ -49,29 +49,29 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
 
   /** Lock a field position slot and reoptimize */
   const lockSlot = useCallback(
-    (quarter: QuarterKey, half: HalfKey, position: PositionName, playerId: string): RotationWarning[] => {
+    (quarter: QuarterKey, shift: ShiftKey, position: PositionName, playerId: string): RotationWarning[] => {
       if (!grid) return [];
 
       const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
-      const halfRot = updatedGrid[quarter][half];
+      const shiftRot = updatedGrid[quarter][shift];
 
       // Unlock the player who was previously in this slot (if any)
-      const previous = halfRot.positions[position];
+      const previous = shiftRot.positions[position];
       if (previous.playerId && previous.playerId !== playerId) {
-        // Find if they're locked anywhere else in this half; if not, just displace them
+        // Find if they're locked anywhere else in this shift; if not, just displace them
         // (reoptimize will reassign them)
       }
 
       // Set the new locked assignment
-      halfRot.positions[position] = { playerId, locked: true };
+      shiftRot.positions[position] = { playerId, locked: true };
 
       // If the new player was on bench, remove them from bench
-      halfRot.bench = halfRot.bench.filter((s) => s.playerId !== playerId);
+      shiftRot.bench = shiftRot.bench.filter((s) => s.playerId !== playerId);
 
-      // If the new player was in another position this half, unlock that slot
-      for (const pos of Object.keys(halfRot.positions) as PositionName[]) {
-        if (pos !== position && halfRot.positions[pos].playerId === playerId) {
-          halfRot.positions[pos] = { playerId: null, locked: false };
+      // If the new player was in another position this shift, unlock that slot
+      for (const pos of Object.keys(shiftRot.positions) as PositionName[]) {
+        if (pos !== position && shiftRot.positions[pos].playerId === playerId) {
+          shiftRot.positions[pos] = { playerId: null, locked: false };
         }
       }
 
@@ -82,25 +82,25 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
 
   /** Lock a bench slot and reoptimize */
   const lockBench = useCallback(
-    (quarter: QuarterKey, half: HalfKey, playerId: string): RotationWarning[] => {
+    (quarter: QuarterKey, shift: ShiftKey, playerId: string): RotationWarning[] => {
       if (!grid) return [];
 
       const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
-      const halfRot = updatedGrid[quarter][half];
+      const shiftRot = updatedGrid[quarter][shift];
 
       // Remove from any field position
-      for (const pos of Object.keys(halfRot.positions) as PositionName[]) {
-        if (halfRot.positions[pos].playerId === playerId) {
-          halfRot.positions[pos] = { playerId: null, locked: false };
+      for (const pos of Object.keys(shiftRot.positions) as PositionName[]) {
+        if (shiftRot.positions[pos].playerId === playerId) {
+          shiftRot.positions[pos] = { playerId: null, locked: false };
         }
       }
 
       // Add to bench if not already there
-      const alreadyOnBench = halfRot.bench.some((s) => s.playerId === playerId);
+      const alreadyOnBench = shiftRot.bench.some((s) => s.playerId === playerId);
       if (!alreadyOnBench) {
-        halfRot.bench.push({ playerId, locked: true });
+        shiftRot.bench.push({ playerId, locked: true });
       } else {
-        halfRot.bench = halfRot.bench.map((s) =>
+        shiftRot.bench = shiftRot.bench.map((s) =>
           s.playerId === playerId ? { ...s, locked: true } : s,
         );
       }
@@ -121,17 +121,17 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
         gkPlayerId: playerId,
         gkLocked: true,
         // Clear the GK from field/bench so reoptimize can reassign prior GK
-        first: {
-          ...updatedGrid[quarter].first,
+        shift1: {
+          ...updatedGrid[quarter].shift1,
           positions: {
-            ...updatedGrid[quarter].first.positions,
+            ...updatedGrid[quarter].shift1.positions,
             GK: { playerId, locked: false },
           },
         },
-        second: {
-          ...updatedGrid[quarter].second,
+        shift2: {
+          ...updatedGrid[quarter].shift2,
           positions: {
-            ...updatedGrid[quarter].second.positions,
+            ...updatedGrid[quarter].shift2.positions,
             GK: { playerId, locked: false },
           },
         },
@@ -144,10 +144,10 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
 
   /** Remove the lock on a field position slot and reoptimize */
   const unlockSlot = useCallback(
-    (quarter: QuarterKey, half: HalfKey, position: PositionName): RotationWarning[] => {
+    (quarter: QuarterKey, shift: ShiftKey, position: PositionName): RotationWarning[] => {
       if (!grid) return [];
       const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
-      updatedGrid[quarter][half].positions[position] = { playerId: null, locked: false };
+      updatedGrid[quarter][shift].positions[position] = { playerId: null, locked: false };
       return reoptimize(updatedGrid);
     },
     [grid, reoptimize],

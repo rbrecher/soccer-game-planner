@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Game, HalfKey, Player, PositionName, QuarterKey, RotationWarning } from '../../types';
+import type { Game, ShiftKey, Player, PositionName, QuarterKey, RotationWarning } from '../../types';
 import { QUARTERS } from '../../constants/game';
 import { Button } from '../shared/Button';
 import { QuarterPanel } from './QuarterPanel';
@@ -8,9 +8,9 @@ interface RotationGridProps {
   game: Game;
   allPlayers: Player[];
   warnings: RotationWarning[];
-  onLockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName, playerId: string) => void;
-  onUnlockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName) => void;
-  onLockBench: (quarter: QuarterKey, half: HalfKey, playerId: string) => void;
+  onLockSlot: (quarter: QuarterKey, half: ShiftKey, position: PositionName, playerId: string) => void;
+  onUnlockSlot: (quarter: QuarterKey, half: ShiftKey, position: PositionName) => void;
+  onLockBench: (quarter: QuarterKey, half: ShiftKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
   onReset: () => RotationWarning[];
@@ -38,7 +38,7 @@ export function RotationGrid({
     setLocalWarnings(w);
   };
 
-  const handleLockSlot = (quarter: QuarterKey, half: HalfKey, position: PositionName, playerId: string) => {
+  const handleLockSlot = (quarter: QuarterKey, half: ShiftKey, position: PositionName, playerId: string) => {
     onLockSlot(quarter, half, position, playerId);
     setLocalWarnings([]);
   };

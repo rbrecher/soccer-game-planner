@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { assignBench } from './assignBench';
 import { assignGoalies } from './assignGoalies';
 import { makeFullRoster, makeAvailabilityAll, makeAvailability, makePlayer } from '../test-utils/fixtures';
-import { QUARTERS, HALVES } from '../constants/game';
+import { QUARTERS, SHIFTS } from '../constants/game';
 import type { QuarterKey, RotationGrid } from '../types';
 
 /** Run assignGoalies + assignBench on a standard roster with all-available. */
@@ -15,15 +15,15 @@ function runBench(playerCount: number) {
 }
 
 describe('assignBench', () => {
-  it('produces 1 bench player per half when roster is exactly 8', () => {
+  it('produces 1 bench player per shift when roster is exactly 8', () => {
     const { gkMap, benchMap } = runBench(8);
 
     for (const q of QUARTERS) {
-      expect(benchMap[q].first).toHaveLength(1);
-      expect(benchMap[q].second).toHaveLength(1);
+      expect(benchMap[q].shift1).toHaveLength(1);
+      expect(benchMap[q].shift2).toHaveLength(1);
       // GK should not be on bench
-      expect(benchMap[q].first).not.toContain(gkMap[q]);
-      expect(benchMap[q].second).not.toContain(gkMap[q]);
+      expect(benchMap[q].shift1).not.toContain(gkMap[q]);
+      expect(benchMap[q].shift2).not.toContain(gkMap[q]);
     }
   });
 
@@ -31,8 +31,8 @@ describe('assignBench', () => {
     const { benchMap } = runBench(7);
 
     for (const q of QUARTERS) {
-      expect(benchMap[q].first).toHaveLength(0);
-      expect(benchMap[q].second).toHaveLength(0);
+      expect(benchMap[q].shift1).toHaveLength(0);
+      expect(benchMap[q].shift2).toHaveLength(0);
     }
   });
 
@@ -41,8 +41,8 @@ describe('assignBench', () => {
 
     const benchCounts = new Map<string, number>();
     for (const q of QUARTERS) {
-      for (const half of HALVES) {
-        for (const pid of benchMap[q][half]) {
+      for (const shift of SHIFTS) {
+        for (const pid of benchMap[q][shift]) {
           benchCounts.set(pid, (benchCounts.get(pid) ?? 0) + 1);
         }
       }
@@ -55,12 +55,11 @@ describe('assignBench', () => {
   it('avoids consecutive bench stints when alternatives exist (8-player roster)', () => {
     const { benchMap } = runBench(8);
 
-    // With 8 players, bench = 1 per half and 7 non-GK candidates per half.
-    // The algorithm should always pick a different player for back-to-back halves.
-    // Check within each quarter (consecutive half indices).
+    // With 8 players, bench = 1 per shift and 7 non-GK candidates per shift.
+    // The algorithm should always pick a different player for back-to-back shifts.
     for (const q of QUARTERS) {
-      for (const pid of benchMap[q].first) {
-        expect(benchMap[q].second).not.toContain(pid);
+      for (const pid of benchMap[q].shift1) {
+        expect(benchMap[q].shift2).not.toContain(pid);
       }
     }
   });
@@ -76,10 +75,10 @@ describe('assignBench', () => {
     expect(() => assignBench(players, availability, gkMap, {})).not.toThrow();
 
     const benchMap = assignBench(players, availability, gkMap, {});
-    // Bench count per half = 14 - 7 = 7
+    // Bench count per shift = 14 - 7 = 7
     for (const q of QUARTERS) {
-      expect(benchMap[q].first).toHaveLength(7);
-      expect(benchMap[q].second).toHaveLength(7);
+      expect(benchMap[q].shift1).toHaveLength(7);
+      expect(benchMap[q].shift2).toHaveLength(7);
     }
   });
 
@@ -88,23 +87,23 @@ describe('assignBench', () => {
     const availability = players.map((p) => makeAvailabilityAll(p.id));
     const { gkMap } = assignGoalies(players, availability, {});
 
-    // Build an existingGrid with a locked bench slot in Q1/first.
+    // Build an existingGrid with a locked bench slot in Q1/shift1.
     // Use a player that is not the Q1 GK.
     const nonGkPlayer = players.find((p) => p.id !== gkMap.Q1)!;
     const existingGrid: Partial<RotationGrid> = {
       Q1: {
         gkPlayerId: gkMap.Q1,
         gkLocked: false,
-        first: {
+        shift1: {
           positions: {} as never,
           bench: [{ playerId: nonGkPlayer.id, locked: true }],
         },
-        second: { positions: {} as never, bench: [] },
+        shift2: { positions: {} as never, bench: [] },
       },
     };
 
     const benchMap = assignBench(players, availability, gkMap, existingGrid);
-    expect(benchMap.Q1.first).toContain(nonGkPlayer.id);
+    expect(benchMap.Q1.shift1).toContain(nonGkPlayer.id);
   });
 
   it('does not bench unavailable players', () => {
@@ -117,8 +116,8 @@ describe('assignBench', () => {
     const { gkMap } = assignGoalies(players, availability, {});
     const benchMap = assignBench(players, availability, gkMap, {});
 
-    expect(benchMap.Q3.first).not.toContain(targetPlayer.id);
-    expect(benchMap.Q3.second).not.toContain(targetPlayer.id);
+    expect(benchMap.Q3.shift1).not.toContain(targetPlayer.id);
+    expect(benchMap.Q3.shift2).not.toContain(targetPlayer.id);
   });
 
   it('still includes a locked bench entry even when benchNeeded is 0 (7 players)', () => {
@@ -132,17 +131,17 @@ describe('assignBench', () => {
       Q1: {
         gkPlayerId: gkMap.Q1,
         gkLocked: false,
-        first: {
+        shift1: {
           positions: {} as never,
           bench: [{ playerId: nonGkPlayer.id, locked: true }],
         },
-        second: { positions: {} as never, bench: [] },
+        shift2: { positions: {} as never, bench: [] },
       },
     };
 
     const benchMap = assignBench(players, availability, gkMap, existingGrid);
     // Locked player preserved despite benchNeeded = 0
-    expect(benchMap.Q1.first).toContain(nonGkPlayer.id);
+    expect(benchMap.Q1.shift1).toContain(nonGkPlayer.id);
   });
 
   it('does not bench a player in the quarter they serve as GK', () => {
@@ -154,8 +153,8 @@ describe('assignBench', () => {
     for (const q of QUARTERS as QuarterKey[]) {
       const gkId = gkMap[q];
       if (gkId) {
-        expect(benchMap[q].first).not.toContain(gkId);
-        expect(benchMap[q].second).not.toContain(gkId);
+        expect(benchMap[q].shift1).not.toContain(gkId);
+        expect(benchMap[q].shift2).not.toContain(gkId);
       }
     }
   });

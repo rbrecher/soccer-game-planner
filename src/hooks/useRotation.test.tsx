@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useRotation } from './useRotation';
 import { generateRotation } from '../algorithm';
 import { makeFullRoster, makeGame } from '../test-utils/fixtures';
-import { FIELD_POSITIONS, QUARTERS, HALVES } from '../constants/game';
+import { FIELD_POSITIONS, QUARTERS, SHIFTS } from '../constants/game';
 import type { Game, RotationGrid } from '../types';
 
 /** Extract the rotation saved via the most recent onGameUpdate call. */
@@ -38,59 +38,59 @@ describe('useRotation', () => {
     const savedGrid = lastSavedGrid(onGameUpdate);
     for (const q of QUARTERS) {
       expect(savedGrid[q]).toBeDefined();
-      expect(savedGrid[q].first).toBeDefined();
-      expect(savedGrid[q].second).toBeDefined();
+      expect(savedGrid[q].shift1).toBeDefined();
+      expect(savedGrid[q].shift2).toBeDefined();
     }
   });
 
   it('lockSlot locks the chosen position and the lock survives reoptimize', () => {
     const { result, initialGrid, onGameUpdate } = setup();
 
-    const strikerId = initialGrid.Q1.first.positions['Striker'].playerId!;
+    const strikerId = initialGrid.Q1.shift1.positions['Striker'].playerId!;
 
-    act(() => { result.current.lockSlot('Q1', 'first', 'Striker', strikerId); });
+    act(() => { result.current.lockSlot('Q1', 'shift1', 'Striker', strikerId); });
 
     const savedGrid = lastSavedGrid(onGameUpdate);
-    expect(savedGrid.Q1.first.positions['Striker'].playerId).toBe(strikerId);
-    expect(savedGrid.Q1.first.positions['Striker'].locked).toBe(true);
+    expect(savedGrid.Q1.shift1.positions['Striker'].playerId).toBe(strikerId);
+    expect(savedGrid.Q1.shift1.positions['Striker'].locked).toBe(true);
   });
 
-  it('lockSlot clears the player from their previous position in the same half', () => {
+  it('lockSlot clears the player from their previous position in the same shift', () => {
     const { result, initialGrid, onGameUpdate } = setup();
 
-    // Find the player in Left Back in Q1/first
-    const leftBackPid = initialGrid.Q1.first.positions['Left Back'].playerId!;
+    // Find the player in Left Back in Q1/shift1
+    const leftBackPid = initialGrid.Q1.shift1.positions['Left Back'].playerId!;
 
     // Lock them to Striker instead
-    act(() => { result.current.lockSlot('Q1', 'first', 'Striker', leftBackPid); });
+    act(() => { result.current.lockSlot('Q1', 'shift1', 'Striker', leftBackPid); });
 
     const savedGrid = lastSavedGrid(onGameUpdate);
     // Striker is now locked to this player
-    expect(savedGrid.Q1.first.positions['Striker'].playerId).toBe(leftBackPid);
-    expect(savedGrid.Q1.first.positions['Striker'].locked).toBe(true);
+    expect(savedGrid.Q1.shift1.positions['Striker'].playerId).toBe(leftBackPid);
+    expect(savedGrid.Q1.shift1.positions['Striker'].locked).toBe(true);
     // Left Back should no longer hold this player
-    expect(savedGrid.Q1.first.positions['Left Back'].playerId).not.toBe(leftBackPid);
-    expect(savedGrid.Q1.first.positions['Left Back'].locked).toBe(false);
+    expect(savedGrid.Q1.shift1.positions['Left Back'].playerId).not.toBe(leftBackPid);
+    expect(savedGrid.Q1.shift1.positions['Left Back'].locked).toBe(false);
   });
 
   it('lockBench moves the player from a field position into the bench', () => {
     const { result, initialGrid, onGameUpdate } = setup();
 
-    const strikerId = initialGrid.Q1.first.positions['Striker'].playerId!;
+    const strikerId = initialGrid.Q1.shift1.positions['Striker'].playerId!;
 
-    act(() => { result.current.lockBench('Q1', 'first', strikerId); });
+    act(() => { result.current.lockBench('Q1', 'shift1', strikerId); });
 
     const savedGrid = lastSavedGrid(onGameUpdate);
 
     // Player appears in bench with locked = true
-    const benchPids = savedGrid.Q1.first.bench.map((s) => s.playerId);
+    const benchPids = savedGrid.Q1.shift1.bench.map((s) => s.playerId);
     expect(benchPids).toContain(strikerId);
-    const lockedSlot = savedGrid.Q1.first.bench.find((s) => s.playerId === strikerId);
+    const lockedSlot = savedGrid.Q1.shift1.bench.find((s) => s.playerId === strikerId);
     expect(lockedSlot?.locked).toBe(true);
 
     // Player no longer in any field position
     for (const pos of FIELD_POSITIONS) {
-      expect(savedGrid.Q1.first.positions[pos].playerId).not.toBe(strikerId);
+      expect(savedGrid.Q1.shift1.positions[pos].playerId).not.toBe(strikerId);
     }
   });
 
@@ -113,17 +113,17 @@ describe('useRotation', () => {
     const players = makeFullRoster(10);
     const { grid: initial } = generateRotation(players, makeGame(players));
     const lockedGrid: RotationGrid = JSON.parse(JSON.stringify(initial));
-    const strikerId = lockedGrid.Q1.first.positions['Striker'].playerId!;
-    lockedGrid.Q1.first.positions['Striker'] = { playerId: strikerId, locked: true };
+    const strikerId = lockedGrid.Q1.shift1.positions['Striker'].playerId!;
+    lockedGrid.Q1.shift1.positions['Striker'] = { playerId: strikerId, locked: true };
 
     const game = makeGame(players, lockedGrid);
     const onGameUpdate = vi.fn();
     const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
 
-    act(() => { result.current.unlockSlot('Q1', 'first', 'Striker'); });
+    act(() => { result.current.unlockSlot('Q1', 'shift1', 'Striker'); });
 
     const savedGrid = lastSavedGrid(onGameUpdate);
-    expect(savedGrid.Q1.first.positions['Striker'].locked).toBe(false);
+    expect(savedGrid.Q1.shift1.positions['Striker'].locked).toBe(false);
   });
 
   it('unlockGK sets gkLocked to false for the chosen quarter', () => {
@@ -149,8 +149,8 @@ describe('useRotation', () => {
     // Create a grid with multiple locks
     const lockedGrid: RotationGrid = JSON.parse(JSON.stringify(initial));
     lockedGrid.Q1.gkLocked = true;
-    lockedGrid.Q1.first.positions['Striker'] = {
-      playerId: lockedGrid.Q1.first.positions['Striker'].playerId,
+    lockedGrid.Q1.shift1.positions['Striker'] = {
+      playerId: lockedGrid.Q1.shift1.positions['Striker'].playerId,
       locked: true,
     };
 
@@ -163,11 +163,11 @@ describe('useRotation', () => {
     const savedGrid = lastSavedGrid(onGameUpdate);
     for (const q of QUARTERS) {
       expect(savedGrid[q].gkLocked).toBe(false);
-      for (const half of HALVES) {
+      for (const shift of SHIFTS) {
         for (const pos of FIELD_POSITIONS) {
-          expect(savedGrid[q][half].positions[pos].locked).toBe(false);
+          expect(savedGrid[q][shift].positions[pos].locked).toBe(false);
         }
-        for (const slot of savedGrid[q][half].bench) {
+        for (const slot of savedGrid[q][shift].bench) {
           expect(slot.locked).toBe(false);
         }
       }
@@ -177,15 +177,15 @@ describe('useRotation', () => {
   it('calls onGameUpdate once for each mutation function', () => {
     const { result, initialGrid, players, onGameUpdate } = setup();
 
-    const strikerId = initialGrid.Q1.first.positions['Striker'].playerId!;
+    const strikerId = initialGrid.Q1.shift1.positions['Striker'].playerId!;
     const currentGkId = initialGrid.Q1.gkPlayerId;
     const newGk = players.find((p) => p.id !== currentGkId && p.goalieWilling)!;
 
     act(() => { result.current.generateFresh(); });
-    act(() => { result.current.lockSlot('Q1', 'first', 'Striker', strikerId); });
-    act(() => { result.current.lockBench('Q1', 'second', strikerId); });
+    act(() => { result.current.lockSlot('Q1', 'shift1', 'Striker', strikerId); });
+    act(() => { result.current.lockBench('Q1', 'shift2', strikerId); });
     act(() => { result.current.lockGK('Q1', newGk.id); });
-    act(() => { result.current.unlockSlot('Q1', 'first', 'Striker'); });
+    act(() => { result.current.unlockSlot('Q1', 'shift1', 'Striker'); });
     act(() => { result.current.unlockGK('Q1'); });
 
     expect(onGameUpdate).toHaveBeenCalledTimes(6);

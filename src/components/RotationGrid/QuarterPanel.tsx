@@ -1,15 +1,15 @@
-import type { Game, HalfKey, Player, PositionName, QuarterKey, QuarterRotation } from '../../types';
+import type { Game, ShiftKey, Player, PositionName, QuarterKey, QuarterRotation } from '../../types';
 import { GoalieRow } from './GoalieRow';
-import { HalfPanel } from './HalfPanel';
+import { ShiftPanel } from './ShiftPanel';
 
 interface QuarterPanelProps {
   quarter: QuarterKey;
   quarterRotation: QuarterRotation;
   allPlayers: Player[];
   availability: Game['availability'];
-  onLockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName, playerId: string) => void;
-  onUnlockSlot: (quarter: QuarterKey, half: HalfKey, position: PositionName) => void;
-  onLockBench: (quarter: QuarterKey, half: HalfKey, playerId: string) => void;
+  onLockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName, playerId: string) => void;
+  onUnlockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName) => void;
+  onLockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
 }
@@ -47,21 +47,21 @@ export function QuarterPanel({
         onUnlockGK={onUnlockGK}
       />
 
-      <div className="quarter-panel__halves">
-        <HalfPanel
+      <div className="quarter-panel__shifts">
+        <ShiftPanel
           quarter={quarter}
-          half="first"
-          halfRotation={quarterRotation.first}
+          shift="shift1"
+          shiftRotation={quarterRotation.shift1}
           allPlayers={allPlayers}
           availablePlayers={availablePlayers}
           onLockSlot={onLockSlot}
           onUnlockSlot={onUnlockSlot}
           onLockBench={onLockBench}
         />
-        <HalfPanel
+        <ShiftPanel
           quarter={quarter}
-          half="second"
-          halfRotation={quarterRotation.second}
+          shift="shift2"
+          shiftRotation={quarterRotation.shift2}
           allPlayers={allPlayers}
           availablePlayers={availablePlayers}
           onLockSlot={onLockSlot}

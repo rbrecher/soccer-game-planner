@@ -9,8 +9,8 @@ function lockedQuarter(gkPlayerId: string): Partial<RotationGrid[keyof RotationG
   return {
     gkPlayerId,
     gkLocked: true,
-    first: { positions: {} as never, bench: [] },
-    second: { positions: {} as never, bench: [] },
+    shift1: { positions: {} as never, bench: [] },
+    shift2: { positions: {} as never, bench: [] },
   };
 }
 
