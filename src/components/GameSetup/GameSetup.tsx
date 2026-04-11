@@ -45,6 +45,15 @@ export function GameSetup({
     onUpdateGame(selectedGame.id, { availability: updated });
   };
 
+  const handleAvailChangeAll = (playerId: string, available: boolean) => {
+    if (!selectedGame) return;
+    const allQuarters = { Q1: available, Q2: available, Q3: available, Q4: available };
+    const updated: PlayerAvailability[] = selectedGame.availability.map((a) =>
+      a.playerId === playerId ? { ...a, quarters: allQuarters } : a,
+    );
+    onUpdateGame(selectedGame.id, { availability: updated });
+  };
+
   const availableCountPerQuarter = (quarter: QuarterKey): number => {
     if (!selectedGame) return 0;
     return selectedGame.availability.filter((a) => a.quarters[quarter]).length;
@@ -131,6 +140,7 @@ export function GameSetup({
               roster={roster}
               availability={selectedGame.availability}
               onChange={handleAvailChange}
+              onChangeAll={handleAvailChangeAll}
             />
           )}
 
