@@ -307,8 +307,6 @@ body {
   margin: 0 0 10px;
 }
 
-.half-panel__positions { display: flex; flex-direction: column; gap: 6px; }
-
 .half-panel__bench {
   margin-top: 10px;
   padding-top: 10px;
@@ -329,6 +327,90 @@ body {
   color: #555;
 }
 .bench-tag--locked { background: #e8f0fe; color: #1a56db; }
+
+/* ── Field View ──────────────────────────────────────────────── */
+.field { width: 100%; margin-bottom: 10px; }
+
+.field__surface {
+  position: relative;
+  width: 100%;
+  padding-bottom: 145%;
+  background: #c8e6c9;
+  border-radius: 8px;
+  border: 1px solid #a5d6a7;
+  overflow: visible;
+}
+
+/* Halfway line */
+.field__surface::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  right: 5%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Center circle */
+.field__surface::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.field__token {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 58px;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.1s, background 0.1s;
+  z-index: 1;
+  line-height: 1;
+}
+.field__token:hover { border-color: #888; background: #f5f5f5; }
+.field__token--locked { border-color: #7ab0e8; background: #e8f4ff; }
+.field__token--empty { border-style: dashed; border-color: #bbb; }
+
+.field__token-pos {
+  font-size: 9px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  line-height: 1.2;
+}
+.field__token--locked .field__token-pos { color: #5a89c0; }
+
+.field__token-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #111;
+  white-space: nowrap;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.field__token--empty .field__token-name { color: #aaa; }
+.field__token--locked .field__token-name { color: #1a56db; }
+
+.field__token-lock { font-size: 9px; line-height: 1; }
 
 /* ── Slot Cell ───────────────────────────────────────────────── */
 .slot-cell {

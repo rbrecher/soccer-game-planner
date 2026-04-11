@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import type { HalfKey, HalfRotation, Player, PositionName, QuarterKey } from '../../types';
-import { FIELD_POSITIONS } from '../../constants/game';
 import { Modal } from '../shared/Modal';
 import { PlayerPicker } from '../shared/PlayerPicker';
-import { SlotCell } from './SlotCell';
+import { FieldView } from './FieldView';
 
 interface HalfPanelProps {
   quarter: QuarterKey;
@@ -43,17 +42,11 @@ export function HalfPanel({
     <div className="half-panel">
       <h4 className="half-panel__title">{halfLabel}</h4>
 
-      <div className="half-panel__positions">
-        {FIELD_POSITIONS.map((pos) => (
-          <SlotCell
-            key={pos}
-            position={pos}
-            slot={halfRotation.positions[pos] ?? { playerId: null, locked: false }}
-            players={allPlayers}
-            onClick={() => setEditingSlot(pos)}
-          />
-        ))}
-      </div>
+      <FieldView
+        positions={halfRotation.positions}
+        players={allPlayers}
+        onSlotClick={(pos) => setEditingSlot(pos)}
+      />
 
       {halfRotation.bench.length > 0 && (
         <div className="half-panel__bench">
