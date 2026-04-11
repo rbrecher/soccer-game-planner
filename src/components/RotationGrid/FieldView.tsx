@@ -16,6 +16,12 @@ const FIELD_COORDS: Partial<Record<PositionName, { top: string; left: string }>>
   'Right Back':  { top: '76%', left: '75%' },
 };
 
+function shortName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+}
+
 const POSITION_ABBR: Partial<Record<PositionName, string>> = {
   'Striker':    'ST',
   'Left Wing':  'LW',
@@ -52,7 +58,7 @@ export function FieldView({ positions, players, onSlotClick }: FieldViewProps) {
               aria-label={`${pos}: ${player ? player.name : 'empty'}`}
             >
               <span className="field__token-pos">{POSITION_ABBR[pos] ?? pos}</span>
-              <span className="field__token-name">{player ? player.name : '—'}</span>
+              <span className="field__token-name">{player ? shortName(player.name) : '—'}</span>
               {slot.locked && <span className="field__token-lock">🔒</span>}
             </button>
           );
