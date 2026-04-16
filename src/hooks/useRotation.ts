@@ -8,15 +8,82 @@ import type {
   RotationGrid,
   RotationWarning,
 } from '../types';
+import { ALL_POSITIONS, QUARTERS, SHIFTS } from '../constants/game';
 import { generateRotation } from '../algorithm';
+import { computeSeasonPositions } from '../utils/seasonStats';
+
+/**
+ * Returns a deep copy of the grid with closure locks applied for the algorithm.
+ * Closed shifts have all their positions/bench forced to locked=true.
+ * Quarters with any closed shift have gkLocked forced to true.
+ * Existing manual locks on open shifts are also preserved.
+ * Used for reoptimize (preserves all locks).
+ */
+function applyClosedShiftLocks(grid: RotationGrid): RotationGrid {
+  const copy: RotationGrid = JSON.parse(JSON.stringify(grid));
+  for (const q of QUARTERS) {
+    const quarter = copy[q];
+    for (const shift of SHIFTS) {
+      if (quarter[shift].closed) {
+        for (const pos of ALL_POSITIONS) {
+          const slot = quarter[shift].positions[pos];
+          if (slot?.playerId) slot.locked = true;
+        }
+        quarter[shift].bench = quarter[shift].bench.map((s) => ({ ...s, locked: true }));
+      }
+    }
+    if (SHIFTS.some((s) => quarter[s].closed)) {
+      quarter.gkLocked = true;
+    }
+  }
+  return copy;
+}
+
+/**
+ * Builds a minimal base grid carrying ONLY closed shift data.
+ * Open shifts and manual GK/slot locks are discarded.
+ * Returns undefined if no shifts are closed (so generateFresh runs fully fresh).
+ * Used for generateFresh so "Reset & Regenerate" still clears manual locks.
+ */
+function buildFreshBaseGrid(grid: RotationGrid): RotationGrid | undefined {
+  const hasAnyClosed = QUARTERS.some((q) => SHIFTS.some((s) => grid[q]?.[s]?.closed));
+  if (!hasAnyClosed) return undefined;
+
+  const base: RotationGrid = {} as RotationGrid;
+  for (const q of QUARTERS) {
+    const quarter = grid[q];
+    const anyShiftClosed = SHIFTS.some((s) => quarter[s]?.closed);
+
+    const buildShift = (shift: RotationGrid[QuarterKey][ShiftKey]) => {
+      if (!shift.closed) {
+        return { positions: {} as RotationGrid[QuarterKey][ShiftKey]['positions'], bench: [] };
+      }
+      const positions = {} as RotationGrid[QuarterKey][ShiftKey]['positions'];
+      for (const pos of ALL_POSITIONS) {
+        const slot = shift.positions[pos];
+        if (slot?.playerId) positions[pos] = { playerId: slot.playerId, locked: true };
+      }
+      return { positions, bench: shift.bench.map((s) => ({ ...s, locked: true })), closed: true };
+    };
+
+    base[q] = {
+      gkPlayerId: anyShiftClosed ? quarter.gkPlayerId : null,
+      gkLocked: anyShiftClosed,
+      shift1: buildShift(quarter.shift1),
+      shift2: buildShift(quarter.shift2),
+    };
+  }
+  return base;
+}
 
 interface UseRotationProps {
   players: Player[];
   game: Game | null;
+  allGames: Game[];
   onGameUpdate: (id: string, changes: Partial<Omit<Game, 'id'>>) => void;
 }
 
-export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
+export function useRotation({ players, game, allGames, onGameUpdate }: UseRotationProps) {
   const grid = game?.rotation ?? null;
   const warnings: RotationWarning[] = [];
 
@@ -28,23 +95,27 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
     [game, onGameUpdate],
   );
 
-  /** Generate a fresh rotation, discarding all locks */
+  /** Generate a fresh rotation, discarding manual locks but preserving closed shifts */
   const generateFresh = useCallback((): RotationWarning[] => {
     if (!game) return [];
-    const { grid: newGrid, warnings } = generateRotation(players, game);
+    const seasonPositions = computeSeasonPositions(allGames, game.id);
+    // Only carry over closed shift data; discard manual locks so "reset" truly resets
+    const baseGrid = grid ? buildFreshBaseGrid(grid) : undefined;
+    const { grid: newGrid, warnings } = generateRotation(players, game, baseGrid, seasonPositions);
     saveGrid(newGrid);
     return warnings;
-  }, [players, game, saveGrid]);
+  }, [players, game, allGames, grid, saveGrid]);
 
-  /** Re-run the algorithm preserving locked slots */
+  /** Re-run the algorithm preserving locked slots and closed shifts */
   const reoptimize = useCallback(
     (existingGrid: RotationGrid): RotationWarning[] => {
       if (!game) return [];
-      const { grid: newGrid, warnings } = generateRotation(players, game, existingGrid);
+      const seasonPositions = computeSeasonPositions(allGames, game.id);
+      const { grid: newGrid, warnings } = generateRotation(players, game, applyClosedShiftLocks(existingGrid), seasonPositions);
       saveGrid(newGrid);
       return warnings;
     },
-    [players, game, saveGrid],
+    [players, game, allGames, saveGrid],
   );
 
   /** Lock a field position slot and reoptimize */
@@ -164,10 +235,32 @@ export function useRotation({ players, game, onGameUpdate }: UseRotationProps) {
     [grid, reoptimize],
   );
 
-  /** Clear all locks and regenerate from scratch */
+  /** Clear all locks and regenerate from scratch (closed shifts are still preserved) */
   const resetGrid = useCallback((): RotationWarning[] => {
     return generateFresh();
   }, [generateFresh]);
 
-  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid };
+  /** Mark a shift as completed — read-only and locked for the algorithm */
+  const closeShift = useCallback(
+    (quarter: QuarterKey, shift: ShiftKey): void => {
+      if (!grid) return;
+      const updated: RotationGrid = JSON.parse(JSON.stringify(grid));
+      updated[quarter][shift].closed = true;
+      saveGrid(updated);
+    },
+    [grid, saveGrid],
+  );
+
+  /** Reopen a previously closed shift, making it editable again */
+  const reopenShift = useCallback(
+    (quarter: QuarterKey, shift: ShiftKey): void => {
+      if (!grid) return;
+      const updated: RotationGrid = JSON.parse(JSON.stringify(grid));
+      updated[quarter][shift].closed = false;
+      saveGrid(updated);
+    },
+    [grid, saveGrid],
+  );
+
+  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid, closeShift, reopenShift };
 }

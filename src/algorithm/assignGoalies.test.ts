@@ -44,15 +44,19 @@ describe('assignGoalies', () => {
     expect(gkMap.Q1).toBe('p2');
   });
 
-  it('prefers the player with fewer seasonGKQuarters', () => {
+  it('prefers the player with fewer season GK shifts', () => {
     const players = [
-      makePlayer({ id: 'p1', name: 'Alice', goalieWilling: true, seasonGKQuarters: 2 }),
-      makePlayer({ id: 'p2', name: 'Bob', goalieWilling: true, seasonGKQuarters: 0 }),
+      makePlayer({ id: 'p1', name: 'Alice', goalieWilling: true }),
+      makePlayer({ id: 'p2', name: 'Bob', goalieWilling: true }),
     ];
     const availability = players.map((p) => makeAvailabilityAll(p.id));
-    const { gkMap } = assignGoalies(players, availability, {});
+    const seasonPositions = new Map([
+      ['p1', { GK: 4 } as Record<string, number>],
+      ['p2', { GK: 0 } as Record<string, number>],
+    ]);
+    const { gkMap } = assignGoalies(players, availability, {}, seasonPositions as never);
 
-    expect(gkMap.Q1).toBe('p2'); // fewer season GK quarters = higher priority
+    expect(gkMap.Q1).toBe('p2'); // fewer season GK shifts = higher priority
   });
 
   it('breaks ties in seasonGKQuarters by name ASC', () => {

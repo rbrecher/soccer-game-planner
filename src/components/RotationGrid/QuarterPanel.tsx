@@ -1,9 +1,11 @@
 import type { Game, ShiftKey, Player, PositionName, QuarterKey, QuarterRotation } from '../../types';
+import { SHIFTS } from '../../constants/game';
 import { GoalieRow } from './GoalieRow';
 import { ShiftPanel } from './ShiftPanel';
 
 interface QuarterPanelProps {
   quarter: QuarterKey;
+  activeShift: ShiftKey;
   quarterRotation: QuarterRotation;
   allPlayers: Player[];
   availability: Game['availability'];
@@ -12,10 +14,13 @@ interface QuarterPanelProps {
   onLockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
+  onCloseShift: (quarter: QuarterKey, shift: ShiftKey) => void;
+  onReopenShift: (quarter: QuarterKey, shift: ShiftKey) => void;
 }
 
 export function QuarterPanel({
   quarter,
+  activeShift,
   quarterRotation,
   allPlayers,
   availability,
@@ -24,7 +29,11 @@ export function QuarterPanel({
   onLockBench,
   onLockGK,
   onUnlockGK,
+  onCloseShift,
+  onReopenShift,
 }: QuarterPanelProps) {
+  const isGKReadOnly = SHIFTS.some((s) => quarterRotation[s]?.closed ?? false);
+
   const availablePlayerIds = new Set(
     availability.filter((a) => a.quarters[quarter]).map((a) => a.playerId),
   );
@@ -41,6 +50,7 @@ export function QuarterPanel({
         quarter={quarter}
         gkPlayerId={quarterRotation.gkPlayerId}
         gkLocked={quarterRotation.gkLocked}
+        readOnly={isGKReadOnly}
         availablePlayers={gkPickerPlayers}
         allPlayers={allPlayers}
         onOverride={onLockGK}
@@ -50,23 +60,17 @@ export function QuarterPanel({
       <div className="quarter-panel__shifts">
         <ShiftPanel
           quarter={quarter}
-          shift="shift1"
-          shiftRotation={quarterRotation.shift1}
+          shift={activeShift}
+          shiftRotation={quarterRotation[activeShift]}
+          prevPositions={activeShift === 'shift2' ? quarterRotation.shift1.positions : undefined}
+          isClosed={quarterRotation[activeShift]?.closed ?? false}
           allPlayers={allPlayers}
           availablePlayers={availablePlayers}
           onLockSlot={onLockSlot}
           onUnlockSlot={onUnlockSlot}
           onLockBench={onLockBench}
-        />
-        <ShiftPanel
-          quarter={quarter}
-          shift="shift2"
-          shiftRotation={quarterRotation.shift2}
-          allPlayers={allPlayers}
-          availablePlayers={availablePlayers}
-          onLockSlot={onLockSlot}
-          onUnlockSlot={onUnlockSlot}
-          onLockBench={onLockBench}
+          onClose={() => onCloseShift(quarter, activeShift)}
+          onReopen={() => onReopenShift(quarter, activeShift)}
         />
       </div>
     </div>

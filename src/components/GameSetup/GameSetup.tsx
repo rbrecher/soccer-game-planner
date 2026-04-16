@@ -86,29 +86,6 @@ export function GameSetup({
     <div className="game-setup">
       <h2 className="section-title">Games</h2>
 
-      {/* Create new game */}
-      <div className="game-setup__new">
-        <h3 className="subsection-title">New Game</h3>
-        <div className="game-setup__new-row">
-          <input
-            className="input"
-            placeholder="e.g. vs. Northside FC"
-            value={newLabel}
-            onChange={(e) => setNewLabel(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-          />
-          <input
-            className="input input--date"
-            type="date"
-            value={newDate}
-            onChange={(e) => setNewDate(e.target.value)}
-          />
-          <Button onClick={handleCreate} disabled={!newLabel.trim()}>
-            Create
-          </Button>
-        </div>
-      </div>
-
       {/* Game list */}
       {games.length > 0 && (
         <div className="game-setup__list">
@@ -219,6 +196,29 @@ export function GameSetup({
           </div>
         </div>
       )}
+
+      {/* Create new game */}
+      <div className="game-setup__new">
+        <h3 className="subsection-title">New Game</h3>
+        <div className="game-setup__new-row">
+          <input
+            className="input"
+            placeholder="e.g. vs. Northside FC"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+          />
+          <input
+            className="input input--date"
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+          />
+          <Button onClick={handleCreate} disabled={!newLabel.trim()}>
+            Create
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

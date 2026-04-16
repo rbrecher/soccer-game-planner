@@ -9,7 +9,6 @@ interface HeaderProps {
 export function Header({ view, onNavigate, hasGame }: HeaderProps) {
   return (
     <header className="header">
-      <span className="header__logo">⚽ Soccer Planner</span>
       <nav className="header__nav">
         <button
           className={`header__link${view === 'roster' ? ' header__link--active' : ''}`}

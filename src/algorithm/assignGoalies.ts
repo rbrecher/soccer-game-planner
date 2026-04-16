@@ -1,5 +1,6 @@
 import { QUARTERS } from '../constants/game';
 import type { Player, PlayerAvailability, QuarterKey, QuarterRotation, RotationGrid, RotationWarning } from '../types';
+import { getSeasonCount, type SeasonPositionMap } from '../utils/seasonStats';
 
 /**
  * Assigns a goalie for each quarter.
@@ -11,6 +12,7 @@ export function assignGoalies(
   players: Player[],
   availability: PlayerAvailability[],
   existingGrid: Partial<RotationGrid>,
+  seasonPositions: SeasonPositionMap = new Map(),
 ): { gkMap: Record<QuarterKey, string | null>; warnings: RotationWarning[] } {
   const warnings: RotationWarning[] = [];
   const gkMap: Record<QuarterKey, string | null> = { Q1: null, Q2: null, Q3: null, Q4: null };
@@ -37,7 +39,10 @@ export function assignGoalies(
 
     const eligible = players
       .filter((p) => p.goalieWilling && !usedAsGK.has(p.id) && isAvailable(p.id, q))
-      .sort((a, b) => a.seasonGKQuarters - b.seasonGKQuarters || a.name.localeCompare(b.name));
+      .sort((a, b) =>
+        getSeasonCount(seasonPositions, a.id, 'GK') - getSeasonCount(seasonPositions, b.id, 'GK') ||
+        a.name.localeCompare(b.name),
+      );
 
     if (eligible.length > 0) {
       gkMap[q] = eligible[0].id;

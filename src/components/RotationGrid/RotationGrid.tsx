@@ -14,6 +14,8 @@ interface RotationGridProps {
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
   onReset: () => RotationWarning[];
+  onCloseShift: (quarter: QuarterKey, shift: ShiftKey) => void;
+  onReopenShift: (quarter: QuarterKey, shift: ShiftKey) => void;
 }
 
 export function RotationGrid({
@@ -26,8 +28,11 @@ export function RotationGrid({
   onLockGK,
   onUnlockGK,
   onReset,
+  onCloseShift,
+  onReopenShift,
 }: RotationGridProps) {
   const [activeQuarter, setActiveQuarter] = useState<QuarterKey>('Q1');
+  const [activeShift, setActiveShift] = useState<ShiftKey>('shift1');
   const [localWarnings, setLocalWarnings] = useState<RotationWarning[]>(warnings);
 
   const grid = game.rotation;
@@ -73,15 +78,35 @@ export function RotationGrid({
           <button
             key={q}
             className={`quarter-tab${activeQuarter === q ? ' quarter-tab--active' : ''}`}
-            onClick={() => setActiveQuarter(q)}
+            onClick={() => { setActiveQuarter(q); setActiveShift('shift1'); }}
           >
             {q}
           </button>
         ))}
       </div>
 
+      <div className="shift-tabs">
+        {(['shift1', 'shift2'] as ShiftKey[]).map((s) => {
+          const isClosed = grid[activeQuarter]?.[s]?.closed ?? false;
+          return (
+            <button
+              key={s}
+              className={[
+                'shift-tab',
+                activeShift === s ? 'shift-tab--active' : '',
+                isClosed ? 'shift-tab--closed' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => setActiveShift(s)}
+            >
+              {isClosed ? '✓ ' : ''}{s === 'shift1' ? '1st Shift' : '2nd Shift'}
+            </button>
+          );
+        })}
+      </div>
+
       <QuarterPanel
         quarter={activeQuarter}
+        activeShift={activeShift}
         quarterRotation={grid[activeQuarter]}
         allPlayers={allPlayers}
         availability={game.availability}
@@ -90,6 +115,8 @@ export function RotationGrid({
         onLockBench={onLockBench}
         onLockGK={handleLockGK}
         onUnlockGK={onUnlockGK}
+        onCloseShift={onCloseShift}
+        onReopenShift={onReopenShift}
       />
     </div>
   );

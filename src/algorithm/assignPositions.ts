@@ -9,6 +9,7 @@ import type {
   SlotAssignment,
 } from '../types';
 import type { BenchMap } from './assignBench';
+import { getSeasonCount, type SeasonPositionMap } from '../utils/seasonStats';
 
 /**
  * Assigns field positions to players for each shift within each quarter.
@@ -21,6 +22,7 @@ export function assignPositions(
   gkMap: Record<QuarterKey, string | null>,
   benchMap: BenchMap,
   existingGrid: Partial<RotationGrid>,
+  seasonPositions: SeasonPositionMap = new Map(),
 ): RotationGrid {
   // Track position history per player across the game
   const positionHistory = new Map<string, Map<PositionName, number>>();
@@ -48,7 +50,7 @@ export function assignPositions(
       if (existingShift) {
         for (const pos of FIELD_POSITIONS) {
           const slot = existingShift.positions[pos];
-          if (slot.locked && slot.playerId) {
+          if (slot?.locked && slot.playerId) {
             lockedPositions.set(pos, slot.playerId);
             lockedPlayers.add(slot.playerId);
             // Count this as played for history
@@ -90,9 +92,15 @@ export function assignPositions(
         const candidates = onFieldPlayers
           .filter((p) => !assignedThisShift.has(p.id))
           .sort((a, b) => {
+            // Primary: fewer season shifts at this position across all games
+            const seasonA = getSeasonCount(seasonPositions, a.id, pos);
+            const seasonB = getSeasonCount(seasonPositions, b.id, pos);
+            if (seasonA !== seasonB) return seasonA - seasonB;
+
+            // Secondary: fewer in-game repeats at this position
             const costA = positionHistory.get(a.id)?.get(pos) ?? 0;
             const costB = positionHistory.get(b.id)?.get(pos) ?? 0;
-            if (costA !== costB) return costA - costB; // fewer repeats = better
+            if (costA !== costB) return costA - costB;
 
             // Tiebreak: player who has played fewer distinct positions gets priority
             const distinctA = positionHistory.get(a.id)?.size ?? 0;

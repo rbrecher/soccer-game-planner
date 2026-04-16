@@ -19,7 +19,7 @@ function setup() {
   const game = makeGame(players, initialGrid);
   const onGameUpdate = vi.fn();
 
-  const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
+  const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
   return { result, players, game, initialGrid, onGameUpdate };
 }
 
@@ -30,7 +30,7 @@ describe('useRotation', () => {
     const game = makeGame(players, null);
     const onGameUpdate = vi.fn();
 
-    const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
+    const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
 
     act(() => { result.current.generateFresh(); });
 
@@ -118,7 +118,7 @@ describe('useRotation', () => {
 
     const game = makeGame(players, lockedGrid);
     const onGameUpdate = vi.fn();
-    const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
+    const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
 
     act(() => { result.current.unlockSlot('Q1', 'shift1', 'Striker'); });
 
@@ -134,7 +134,7 @@ describe('useRotation', () => {
 
     const game = makeGame(players, lockedGrid);
     const onGameUpdate = vi.fn();
-    const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
+    const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
 
     act(() => { result.current.unlockGK('Q1'); });
 
@@ -156,7 +156,7 @@ describe('useRotation', () => {
 
     const game = makeGame(players, lockedGrid);
     const onGameUpdate = vi.fn();
-    const { result } = renderHook(() => useRotation({ players, game, onGameUpdate }));
+    const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
 
     act(() => { result.current.resetGrid(); });
 
@@ -194,5 +194,99 @@ describe('useRotation', () => {
       expect(call[0]).toBe('test-game-1');
       expect(call[1]).toHaveProperty('rotation');
     }
+  });
+
+  // ── Shift closing ──────────────────────────────────────────────
+
+  it('closeShift marks the shift as closed', () => {
+    const { result, onGameUpdate } = setup();
+
+    act(() => { result.current.closeShift('Q1', 'shift1'); });
+
+    const saved = lastSavedGrid(onGameUpdate);
+    expect(saved.Q1.shift1.closed).toBe(true);
+    expect(saved.Q1.shift2.closed).toBeFalsy(); // other shift unaffected
+  });
+
+  it('reopenShift marks the shift as not closed', () => {
+    const { result, onGameUpdate, initialGrid } = setup();
+
+    // Close first, then reopen
+    const gridWithClose: RotationGrid = JSON.parse(JSON.stringify(initialGrid));
+    gridWithClose.Q1.shift1.closed = true;
+
+    const players = makeFullRoster(10);
+    const game = makeGame(players, gridWithClose);
+    const localUpdate = vi.fn();
+    const { result: r2 } = renderHook(() =>
+      useRotation({ players, game, allGames: [], onGameUpdate: localUpdate }),
+    );
+
+    act(() => { r2.current.reopenShift('Q1', 'shift1'); });
+
+    const saved = lastSavedGrid(localUpdate);
+    expect(saved.Q1.shift1.closed).toBe(false);
+  });
+
+  it('reoptimize preserves all position assignments in a closed shift', () => {
+    const { result, initialGrid, onGameUpdate } = setup();
+
+    // Close Q1/shift1
+    act(() => { result.current.closeShift('Q1', 'shift1'); });
+
+    const snapshot = { ...initialGrid.Q1.shift1.positions };
+
+    // Trigger a reoptimize via lockSlot on a different shift
+    const striker2Id = initialGrid.Q1.shift2.positions['Striker'].playerId!;
+    act(() => { result.current.lockSlot('Q1', 'shift2', 'Striker', striker2Id); });
+
+    const saved = lastSavedGrid(onGameUpdate);
+    // Every position in the closed shift1 must still have the same player
+    for (const pos of FIELD_POSITIONS) {
+      expect(saved.Q1.shift1.positions[pos].playerId).toBe(snapshot[pos].playerId);
+    }
+  });
+
+  it('generateFresh preserves position assignments in a closed shift', () => {
+    const players = makeFullRoster(10);
+    const { grid: initialGrid } = generateRotation(players, makeGame(players));
+
+    // Mark Q2/shift1 as closed
+    const closedGrid: RotationGrid = JSON.parse(JSON.stringify(initialGrid));
+    closedGrid.Q2.shift1.closed = true;
+    const snapshot = { ...closedGrid.Q2.shift1.positions };
+
+    const game = makeGame(players, closedGrid);
+    const onGameUpdate = vi.fn();
+    const { result } = renderHook(() =>
+      useRotation({ players, game, allGames: [], onGameUpdate }),
+    );
+
+    act(() => { result.current.generateFresh(); });
+
+    const saved = lastSavedGrid(onGameUpdate);
+    for (const pos of FIELD_POSITIONS) {
+      expect(saved.Q2.shift1.positions[pos].playerId).toBe(snapshot[pos].playerId);
+    }
+  });
+
+  it('closing a shift locks the GK so generateFresh does not reassign it', () => {
+    const players = makeFullRoster(10);
+    const { grid: initialGrid } = generateRotation(players, makeGame(players));
+
+    const closedGrid: RotationGrid = JSON.parse(JSON.stringify(initialGrid));
+    closedGrid.Q1.shift1.closed = true;
+    const originalGK = closedGrid.Q1.gkPlayerId;
+
+    const game = makeGame(players, closedGrid);
+    const onGameUpdate = vi.fn();
+    const { result } = renderHook(() =>
+      useRotation({ players, game, allGames: [], onGameUpdate }),
+    );
+
+    act(() => { result.current.generateFresh(); });
+
+    const saved = lastSavedGrid(onGameUpdate);
+    expect(saved.Q1.gkPlayerId).toBe(originalGK);
   });
 });

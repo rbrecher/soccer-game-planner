@@ -18,7 +18,7 @@ body {
 
 .main {
   flex: 1;
-  padding: 24px 16px 48px;
+  padding: 12px 16px 48px;
   max-width: 720px;
   width: 100%;
   margin: 0 auto;
@@ -126,7 +126,7 @@ body {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin: 8px 0 20px;
 }
 
 .roster-manager__list { display: flex; flex-direction: column; gap: 8px; }
@@ -164,7 +164,21 @@ body {
   white-space: nowrap;
 }
 
-.player-row__season { white-space: nowrap; }
+.player-row__season-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  padding: 0 2px;
+  margin-top: -2px;
+}
+
+.season-stat {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  letter-spacing: 0.2px;
+}
 
 /* ── Game Setup ──────────────────────────────────────────────── */
 .game-setup__new-row {
@@ -241,29 +255,54 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   gap: 10px;
+}
+
+.rotation-view__header .section-subtitle {
+  margin-bottom: 0;
 }
 
 .quarter-tabs {
   display: flex;
   gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .quarter-tab {
-  padding: 8px 18px;
+  padding: 6px 14px;
   border-radius: 8px;
   border: 1px solid #ddd;
   background: #fff;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   cursor: pointer;
   font-weight: 500;
   color: #555;
 }
-.quarter-tab:hover { background: #f5f5f5; }
+.quarter-tab:hover { background: #333; }
 .quarter-tab--active { background: #111; color: #fff; border-color: #111; }
+
+.shift-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.shift-tab {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+}
+.shift-tab:hover { background: #333; }
+.shift-tab--active { background: #444; color: #fff; border-color: #444; }
+.shift-tab--closed { color: #2a7a2a; border-color: #b0d8b0; background: #f0faf0; }
+.shift-tab--closed.shift-tab--active { background: #2a7a2a; color: #fff; border-color: #2a7a2a; }
 
 /* ── Goalie Row ──────────────────────────────────────────────── */
 .goalie-row {
@@ -320,6 +359,8 @@ body {
 }
 .shift-panel__bench-label { font-size: 12px; color: #aaa; text-transform: uppercase; width: 100%; }
 
+.shift-panel__close-row { margin-top: 12px; display: flex; justify-content: flex-end; }
+
 .bench-tag {
   display: inline-block;
   padding: 3px 10px;
@@ -373,13 +414,13 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 8px;
+  padding: 6px 12px;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 99px;
   cursor: pointer;
   font-family: inherit;
-  min-width: 68px;
+  min-width: 92px;
   text-align: center;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   transition: border-color 0.1s, background 0.1s;
@@ -401,18 +442,29 @@ body {
 .field__token--locked .field__token-pos { color: #5a89c0; }
 
 .field__token-name {
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
   color: #111;
   white-space: nowrap;
-  max-width: 86px;
+  max-width: 116px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .field__token--empty .field__token-name { color: #aaa; }
 .field__token--locked .field__token-name { color: #1a56db; }
 
+.field__token-sub {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 .field__token-lock { font-size: 9px; line-height: 1; }
+.field__token--readonly { cursor: default; opacity: 0.8; }
+.field__token--readonly:hover { border-color: #ccc; background: #fff; }
 
 /* ── Slot Cell ───────────────────────────────────────────────── */
 .slot-cell {

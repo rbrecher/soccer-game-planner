@@ -3,7 +3,9 @@ import { FIELD_POSITIONS } from '../../constants/game';
 
 interface FieldViewProps {
   positions: Record<PositionName, SlotAssignment>;
+  prevPositions?: Record<PositionName, SlotAssignment>;
   players: Player[];
+  readOnly?: boolean;
   onSlotClick: (position: PositionName) => void;
 }
 
@@ -31,7 +33,7 @@ const POSITION_ABBR: Partial<Record<PositionName, string>> = {
   'Right Back': 'RB',
 };
 
-export function FieldView({ positions, players, onSlotClick }: FieldViewProps) {
+export function FieldView({ positions, prevPositions, players, readOnly = false, onSlotClick }: FieldViewProps) {
   return (
     <div className="field">
       <div className="field__surface">
@@ -43,6 +45,12 @@ export function FieldView({ positions, players, onSlotClick }: FieldViewProps) {
           const player = players.find((p) => p.id === slot.playerId);
           const isEmpty = !player;
 
+          const prevSlot = prevPositions?.[pos];
+          const prevPlayer =
+            prevSlot && prevSlot.playerId !== slot.playerId
+              ? players.find((p) => p.id === prevSlot.playerId)
+              : undefined;
+
           return (
             <button
               key={pos}
@@ -50,15 +58,20 @@ export function FieldView({ positions, players, onSlotClick }: FieldViewProps) {
                 'field__token',
                 slot.locked ? 'field__token--locked' : '',
                 isEmpty ? 'field__token--empty' : '',
+                readOnly ? 'field__token--readonly' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
               style={{ top: coords.top, left: coords.left }}
-              onClick={() => onSlotClick(pos)}
+              onClick={readOnly ? undefined : () => onSlotClick(pos)}
+              disabled={readOnly}
               aria-label={`${pos}: ${player ? player.name : 'empty'}`}
             >
               <span className="field__token-pos">{POSITION_ABBR[pos] ?? pos}</span>
               <span className="field__token-name">{player ? shortName(player.name) : '—'}</span>
+              {prevPlayer && (
+                <span className="field__token-sub">for {shortName(prevPlayer.name)}</span>
+              )}
               {slot.locked && <span className="field__token-lock">🔒</span>}
             </button>
           );

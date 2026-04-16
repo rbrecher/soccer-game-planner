@@ -1,14 +1,26 @@
 import { useState } from 'react';
-import type { Player } from '../../types';
+import type { Player, PositionName } from '../../types';
+import { ALL_POSITIONS } from '../../constants/game';
 import { Button } from '../shared/Button';
+
+const POSITION_ABBR: Record<PositionName, string> = {
+  'GK': 'GK',
+  'Left Wing': 'LW',
+  'Right Wing': 'RW',
+  'Striker': 'ST',
+  'Center Mid': 'CM',
+  'Left Back': 'LB',
+  'Right Back': 'RB',
+};
 
 interface PlayerRowProps {
   player: Player;
+  playerSeasonPositions: Partial<Record<PositionName, number>>;
   onUpdate: (id: string, changes: Partial<Omit<Player, 'id'>>) => void;
   onRemove: (id: string) => void;
 }
 
-export function PlayerRow({ player, onUpdate, onRemove }: PlayerRowProps) {
+export function PlayerRow({ player, playerSeasonPositions, onUpdate, onRemove }: PlayerRowProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(player.name);
 
@@ -47,9 +59,15 @@ export function PlayerRow({ player, onUpdate, onRemove }: PlayerRowProps) {
         </label>
       </div>
 
-      <div className="player-row__season">
-        <span className="badge">{player.seasonGKQuarters}Q as GK</span>
-      </div>
+      {ALL_POSITIONS.some((pos) => (playerSeasonPositions[pos] ?? 0) > 0) && (
+        <div className="player-row__season-stats">
+          {ALL_POSITIONS.filter((pos) => (playerSeasonPositions[pos] ?? 0) > 0).map((pos) => (
+            <span key={pos} className="season-stat">
+              {POSITION_ABBR[pos]}·{playerSeasonPositions[pos]}
+            </span>
+          ))}
+        </div>
+      )}
 
       <Button
         variant="danger"

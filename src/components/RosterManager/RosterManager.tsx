@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import type { Player } from '../../types';
+import type { Player, PositionName } from '../../types';
 import { Button } from '../shared/Button';
 import { PlayerRow } from './PlayerRow';
+import type { SeasonPositionMap } from '../../utils/seasonStats';
 
 interface RosterManagerProps {
   roster: Player[];
+  seasonPositions: SeasonPositionMap;
   onAdd: (name: string, goalieWilling: boolean) => void;
   onUpdate: (id: string, changes: Partial<Omit<Player, 'id'>>) => void;
   onRemove: (id: string) => void;
 }
 
-export function RosterManager({ roster, onAdd, onUpdate, onRemove }: RosterManagerProps) {
+export function RosterManager({ roster, seasonPositions, onAdd, onUpdate, onRemove }: RosterManagerProps) {
   const [newName, setNewName] = useState('');
   const [newGKWilling, setNewGKWilling] = useState(true);
 
@@ -27,6 +29,22 @@ export function RosterManager({ roster, onAdd, onUpdate, onRemove }: RosterManag
       <p className="section-subtitle">
         {roster.length} player{roster.length !== 1 ? 's' : ''} — tap a name to edit
       </p>
+
+      {roster.length === 0 && (
+        <p className="empty-state">No players yet. Add your first player below.</p>
+      )}
+
+      <div className="roster-manager__list">
+        {roster.map((p) => (
+          <PlayerRow
+            key={p.id}
+            player={p}
+            playerSeasonPositions={seasonPositions.get(p.id) ?? {} as Partial<Record<PositionName, number>>}
+            onUpdate={onUpdate}
+            onRemove={onRemove}
+          />
+        ))}
+      </div>
 
       <div className="roster-manager__add">
         <input
@@ -47,16 +65,6 @@ export function RosterManager({ roster, onAdd, onUpdate, onRemove }: RosterManag
         <Button onClick={handleAdd} disabled={!newName.trim()}>
           Add Player
         </Button>
-      </div>
-
-      {roster.length === 0 && (
-        <p className="empty-state">No players yet. Add your first player above.</p>
-      )}
-
-      <div className="roster-manager__list">
-        {roster.map((p) => (
-          <PlayerRow key={p.id} player={p} onUpdate={onUpdate} onRemove={onRemove} />
-        ))}
       </div>
     </div>
   );

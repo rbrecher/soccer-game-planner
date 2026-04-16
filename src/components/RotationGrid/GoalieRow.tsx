@@ -8,6 +8,7 @@ interface GoalieRowProps {
   quarter: QuarterKey;
   gkPlayerId: string | null;
   gkLocked: boolean;
+  readOnly?: boolean;
   availablePlayers: Player[];
   allPlayers: Player[];
   onOverride: (quarter: QuarterKey, playerId: string) => void;
@@ -18,6 +19,7 @@ export function GoalieRow({
   quarter,
   gkPlayerId,
   gkLocked,
+  readOnly = false,
   availablePlayers,
   allPlayers,
   onOverride,
@@ -31,10 +33,12 @@ export function GoalieRow({
       <span className="goalie-row__label">GK (full quarter)</span>
       <span className="goalie-row__name">{gkPlayer ? gkPlayer.name : '—'}</span>
       {gkLocked && <span className="slot-cell__lock" aria-label="Locked">🔒</span>}
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-        Override GK
-      </Button>
-      {gkLocked && (
+      {!readOnly && (
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+          Override GK
+        </Button>
+      )}
+      {!readOnly && gkLocked && (
         <Button variant="ghost" size="sm" onClick={() => onUnlockGK(quarter)}>
           Clear override
         </Button>

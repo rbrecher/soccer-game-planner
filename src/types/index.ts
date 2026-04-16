@@ -29,6 +29,7 @@ export interface SlotAssignment {
 export interface ShiftRotation {
   positions: Record<PositionName, SlotAssignment>;
   bench: SlotAssignment[];
+  closed?: boolean;
 }
 
 export interface QuarterRotation {

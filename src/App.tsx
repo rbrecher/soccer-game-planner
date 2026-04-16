@@ -3,6 +3,7 @@ import type { RotationWarning, ViewName } from './types';
 import { useRoster } from './hooks/useRoster';
 import { useGames } from './hooks/useGames';
 import { useRotation } from './hooks/useRotation';
+import { computeSeasonPositions } from './utils/seasonStats';
 import { Header } from './components/shared/Header';
 import { RosterManager } from './components/RosterManager/RosterManager';
 import { GameSetup } from './components/GameSetup/GameSetup';
@@ -24,11 +25,14 @@ export default function App() {
     selectGame,
   } = useGames(roster);
 
-  const { generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid } = useRotation({
+  const { generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid, closeShift, reopenShift } = useRotation({
     players: roster,
     game: selectedGame,
+    allGames: games,
     onGameUpdate: updateGame,
   });
+
+  const seasonPositions = computeSeasonPositions(games);
 
   const handleGenerateRotation = (): RotationWarning[] => {
     const warnings = generateFresh();
@@ -48,6 +52,7 @@ export default function App() {
         {view === 'roster' && (
           <RosterManager
             roster={roster}
+            seasonPositions={seasonPositions}
             onAdd={addPlayer}
             onUpdate={updatePlayer}
             onRemove={removePlayer}
@@ -79,6 +84,8 @@ export default function App() {
             onLockGK={lockGK}
             onUnlockGK={unlockGK}
             onReset={resetGrid}
+            onCloseShift={closeShift}
+            onReopenShift={reopenShift}
           />
         )}
 
