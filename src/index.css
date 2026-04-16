@@ -266,7 +266,7 @@ body {
 .rotation-view__tabs {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 6px;
   flex-shrink: 0;
 }
@@ -277,6 +277,7 @@ body {
 }
 
 .quarter-tab {
+  flex: 1;
   padding: 6px 14px;
   border-radius: 8px;
   border: 1px solid #ddd;
@@ -286,6 +287,7 @@ body {
   cursor: pointer;
   font-weight: 500;
   color: #555;
+  text-align: center;
 }
 .quarter-tab:hover { background: #333; }
 .quarter-tab--active { background: #111; color: #fff; border-color: #111; }
@@ -296,6 +298,7 @@ body {
 }
 
 .shift-tab {
+  flex: 1;
   padding: 6px 16px;
   border-radius: 8px;
   border: 1px solid #ddd;
@@ -304,10 +307,13 @@ body {
   font-size: 0.85rem;
   font-weight: 500;
   color: #555;
+  text-align: center;
 }
+.shift-tab::before { content: '✓\00a0'; visibility: hidden; }
 .shift-tab:hover { background: #333; }
 .shift-tab--active { background: #444; color: #fff; border-color: #444; }
 .shift-tab--closed { color: #2a7a2a; border-color: #b0d8b0; background: #f0faf0; }
+.shift-tab--closed::before { visibility: visible; }
 .shift-tab--closed.shift-tab--active { background: #2a7a2a; color: #fff; border-color: #2a7a2a; }
 
 /* ── Goalie Row ──────────────────────────────────────────────── */
