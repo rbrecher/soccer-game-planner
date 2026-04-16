@@ -209,7 +209,7 @@ describe('useRotation', () => {
   });
 
   it('reopenShift marks the shift as not closed', () => {
-    const { result, onGameUpdate, initialGrid } = setup();
+    const { initialGrid } = setup();
 
     // Close first, then reopen
     const gridWithClose: RotationGrid = JSON.parse(JSON.stringify(initialGrid));
