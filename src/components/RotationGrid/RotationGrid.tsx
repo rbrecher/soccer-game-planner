@@ -74,7 +74,7 @@ export function RotationGrid({
                   ].filter(Boolean).join(' ')}
                   onClick={() => setActiveShift(s)}
                 >
-                  {s === 'shift1' ? '1st Shift' : '2nd Shift'}
+                  {isClosed ? '✓ ' : ''}{s === 'shift1' ? '1st Shift' : '2nd Shift'}
                 </button>
               );
             })}
