@@ -34,14 +34,15 @@ export function GoalieRow({
       <span className="goalie-row__name">{gkPlayer ? gkPlayer.name : '—'}</span>
       {gkLocked && <span className="slot-cell__lock" aria-label="Locked">🔒</span>}
       {!readOnly && (
-        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
-          Override GK
-        </Button>
-      )}
-      {!readOnly && gkLocked && (
-        <Button variant="ghost" size="sm" onClick={() => onUnlockGK(quarter)}>
-          Clear override
-        </Button>
+        gkLocked ? (
+          <Button variant="ghost" size="sm" onClick={() => onUnlockGK(quarter)}>
+            Clear override
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+            Override GK
+          </Button>
+        )
       )}
 
       {open && (
