@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { assignPositions } from './assignPositions';
 import { assignBench } from './assignBench';
 import { assignGoalies } from './assignGoalies';
-import { makeFullRoster, makeAvailabilityAll } from '../test-utils/fixtures';
+import { makeFullRoster, makeAvailabilityAll, makeAvailability } from '../test-utils/fixtures';
 import { FIELD_POSITIONS, QUARTERS, SHIFTS } from '../constants/game';
 import type { RotationGrid } from '../types';
 
@@ -164,5 +164,34 @@ describe('assignPositions', () => {
         }
       }
     }
+  });
+
+  it('does not assign unavailable players to field positions or bench', () => {
+    const players = makeFullRoster(10);
+    // Make player-0 unavailable for Q1 only
+    const availability = players.map((p) =>
+      p.id === 'player-0' ? makeAvailability(p.id, { Q1: false }) : makeAvailabilityAll(p.id),
+    );
+    const { gkMap } = assignGoalies(players, availability, {});
+    const benchMap = assignBench(players, availability, gkMap, {});
+    const grid = assignPositions(players, availability, gkMap, benchMap, {});
+
+    // player-0 must not appear anywhere in Q1
+    for (const shift of SHIFTS) {
+      for (const pos of FIELD_POSITIONS) {
+        expect(grid['Q1'][shift].positions[pos].playerId).not.toBe('player-0');
+      }
+      expect(grid['Q1'][shift].bench.map((s) => s.playerId)).not.toContain('player-0');
+    }
+
+    // player-0 should still appear in other quarters
+    const appearsElsewhere = (['Q2', 'Q3', 'Q4'] as const).some((q) =>
+      SHIFTS.some((shift) =>
+        FIELD_POSITIONS.some(
+          (pos) => grid[q][shift].positions[pos].playerId === 'player-0',
+        ) || grid[q][shift].bench.some((s) => s.playerId === 'player-0'),
+      ),
+    );
+    expect(appearsElsewhere).toBe(true);
   });
 });

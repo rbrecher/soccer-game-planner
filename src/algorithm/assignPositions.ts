@@ -18,12 +18,17 @@ import { getSeasonCount, type SeasonPositionMap } from '../utils/seasonStats';
  */
 export function assignPositions(
   players: Player[],
-  _availability: PlayerAvailability[],
+  availability: PlayerAvailability[],
   gkMap: Record<QuarterKey, string | null>,
   benchMap: BenchMap,
   existingGrid: Partial<RotationGrid>,
   seasonPositions: SeasonPositionMap = new Map(),
 ): RotationGrid {
+  const isAvailable = (playerId: string, quarter: QuarterKey): boolean => {
+    const avail = availability.find((a) => a.playerId === playerId);
+    return avail ? avail.quarters[quarter] : true;
+  };
+
   // Track position history per player across the game
   const positionHistory = new Map<string, Map<PositionName, number>>();
   for (const p of players) {
@@ -60,9 +65,9 @@ export function assignPositions(
         }
       }
 
-      // Determine on-field players (not bench, not GK)
+      // Determine on-field players (not bench, not GK, available this quarter)
       const onFieldPlayers = players.filter(
-        (p) => p.id !== gkId && !benchIds.has(p.id) && !lockedPlayers.has(p.id),
+        (p) => p.id !== gkId && !benchIds.has(p.id) && !lockedPlayers.has(p.id) && isAvailable(p.id, q),
       );
 
       // Free positions (not locked)
