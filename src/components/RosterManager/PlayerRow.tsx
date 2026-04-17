@@ -40,6 +40,9 @@ export function PlayerRow({ player, playerSeasonPositions, onUpdate, onRemove }:
             onBlur={saveName}
             onKeyDown={(e) => e.key === 'Enter' && saveName()}
             autoFocus
+            autoCorrect="off"
+            autoCapitalize="words"
+            spellCheck={false}
           />
         ) : (
           <span onClick={() => setEditing(true)} className="player-row__name-text">

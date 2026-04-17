@@ -53,6 +53,9 @@ export function RosterManager({ roster, seasonPositions, onAdd, onUpdate, onRemo
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          autoCorrect="off"
+          autoCapitalize="words"
+          spellCheck={false}
         />
         <label className="player-row__toggle">
           <input
