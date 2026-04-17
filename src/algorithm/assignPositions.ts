@@ -58,20 +58,43 @@ export function assignPositions(
           if (slot?.locked && slot.playerId) {
             lockedPositions.set(pos, slot.playerId);
             lockedPlayers.add(slot.playerId);
-            // Count this as played for history
             const hist = positionHistory.get(slot.playerId)!;
             hist.set(pos, (hist.get(pos) ?? 0) + 1);
           }
         }
       }
 
+      // Carryover: players on field in shift1 keep their position in shift2
+      const carryoverPositions = new Map<PositionName, string>(); // position → playerId
+      const carryoverPlayers = new Set<string>();
+      if (shift === 'shift2') {
+        for (const pos of FIELD_POSITIONS) {
+          const pid = quarterGrid.shift1.positions[pos]?.playerId;
+          if (!pid) continue;
+          if (benchIds.has(pid)) continue;       // subbed out
+          if (lockedPositions.has(pos)) continue; // position hard-locked to someone else
+          if (lockedPlayers.has(pid)) continue;   // player hard-locked to a different position
+          carryoverPositions.set(pos, pid);
+          carryoverPlayers.add(pid);
+          const hist = positionHistory.get(pid)!;
+          hist.set(pos, (hist.get(pos) ?? 0) + 1);
+        }
+      }
+
       // Determine on-field players (not bench, not GK, available this quarter)
       const onFieldPlayers = players.filter(
-        (p) => p.id !== gkId && !benchIds.has(p.id) && !lockedPlayers.has(p.id) && isAvailable(p.id, q),
+        (p) =>
+          p.id !== gkId &&
+          !benchIds.has(p.id) &&
+          !lockedPlayers.has(p.id) &&
+          !carryoverPlayers.has(p.id) &&
+          isAvailable(p.id, q),
       );
 
-      // Free positions (not locked)
-      const freePositions = FIELD_POSITIONS.filter((pos) => !lockedPositions.has(pos));
+      // Free positions (not locked, not carried over)
+      const freePositions = FIELD_POSITIONS.filter(
+        (pos) => !lockedPositions.has(pos) && !carryoverPositions.has(pos),
+      );
 
       // Greedy assignment: for each free position, pick the best available player
       // Sort positions by "most contested" (fewest candidate players with cost=0) first
@@ -85,12 +108,14 @@ export function assignPositions(
         return novelA - novelB; // hardest to fill first
       });
 
-      const assignedThisShift = new Set<string>(lockedPlayers);
+      const assignedThisShift = new Set<string>([...lockedPlayers, ...carryoverPlayers]);
       const shiftPositions: Record<PositionName, SlotAssignment> = {} as Record<PositionName, SlotAssignment>;
 
-      // Copy locked assignments first
       for (const [pos, pid] of lockedPositions) {
         shiftPositions[pos] = { playerId: pid, locked: true };
+      }
+      for (const [pos, pid] of carryoverPositions) {
+        shiftPositions[pos] = { playerId: pid, locked: false };
       }
 
       for (const pos of positionOrder) {
