@@ -224,6 +224,19 @@ export function useRotation({ players, game, allGames, onGameUpdate }: UseRotati
     [grid, reoptimize],
   );
 
+  /** Remove the bench lock for a player in a shift and reoptimize */
+  const unlockBench = useCallback(
+    (quarter: QuarterKey, shift: ShiftKey, playerId: string): RotationWarning[] => {
+      if (!grid) return [];
+      const updatedGrid: RotationGrid = JSON.parse(JSON.stringify(grid));
+      updatedGrid[quarter][shift].bench = updatedGrid[quarter][shift].bench.filter(
+        (s) => s.playerId !== playerId,
+      );
+      return reoptimize(updatedGrid);
+    },
+    [grid, reoptimize],
+  );
+
   /** Remove the GK lock for a quarter and reoptimize */
   const unlockGK = useCallback(
     (quarter: QuarterKey): RotationWarning[] => {
@@ -262,5 +275,5 @@ export function useRotation({ players, game, allGames, onGameUpdate }: UseRotati
     [grid, saveGrid],
   );
 
-  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockGK, resetGrid, closeShift, reopenShift };
+  return { grid, warnings, generateFresh, lockSlot, lockBench, lockGK, unlockSlot, unlockBench, unlockGK, resetGrid, closeShift, reopenShift };
 }

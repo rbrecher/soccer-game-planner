@@ -174,6 +174,29 @@ describe('useRotation', () => {
     }
   });
 
+  it('unlockBench removes the bench lock so reoptimize can reassign the player', () => {
+    const players = makeFullRoster(10);
+    const { grid: initial } = generateRotation(players, makeGame(players));
+
+    const lockedGrid: RotationGrid = JSON.parse(JSON.stringify(initial));
+    const benchSlot = lockedGrid.Q1.shift1.bench[0];
+    if (!benchSlot?.playerId) throw new Error('No bench player in Q1/shift1');
+    const benchPlayerId = benchSlot.playerId;
+    lockedGrid.Q1.shift1.bench = lockedGrid.Q1.shift1.bench.map((s) =>
+      s.playerId === benchPlayerId ? { ...s, locked: true } : s,
+    );
+
+    const game = makeGame(players, lockedGrid);
+    const onGameUpdate = vi.fn();
+    const { result } = renderHook(() => useRotation({ players, game, allGames: [], onGameUpdate }));
+
+    act(() => { result.current.unlockBench('Q1', 'shift1', benchPlayerId); });
+
+    const savedGrid = lastSavedGrid(onGameUpdate);
+    const slot = savedGrid.Q1.shift1.bench.find((s) => s.playerId === benchPlayerId);
+    expect(slot?.locked).toBeFalsy();
+  });
+
   it('calls onGameUpdate once for each mutation function', () => {
     const { result, initialGrid, players, onGameUpdate } = setup();
 
@@ -187,8 +210,12 @@ describe('useRotation', () => {
     act(() => { result.current.lockGK('Q1', newGk.id); });
     act(() => { result.current.unlockSlot('Q1', 'shift1', 'Striker'); });
     act(() => { result.current.unlockGK('Q1'); });
+    const benchPlayer = initialGrid.Q1.shift1.bench[0];
+    if (benchPlayer?.playerId) {
+      act(() => { result.current.unlockBench('Q1', 'shift1', benchPlayer.playerId!); });
+    }
 
-    expect(onGameUpdate).toHaveBeenCalledTimes(6);
+    expect(onGameUpdate).toHaveBeenCalledTimes(benchPlayer?.playerId ? 7 : 6);
     // Every call should pass the game id and a rotation
     for (const call of onGameUpdate.mock.calls) {
       expect(call[0]).toBe('test-game-1');

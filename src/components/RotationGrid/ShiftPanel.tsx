@@ -16,6 +16,7 @@ interface ShiftPanelProps {
   onLockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName, playerId: string) => void;
   onUnlockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName) => void;
   onLockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
+  onUnlockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
   onClose: () => void;
   onReopen: () => void;
 }
@@ -31,10 +32,12 @@ export function ShiftPanel({
   onLockSlot,
   onUnlockSlot,
   onLockBench,
+  onUnlockBench,
   onClose,
   onReopen,
 }: ShiftPanelProps) {
   const [editingSlot, setEditingSlot] = useState<PositionName | 'bench' | null>(null);
+  const [editingBenchPlayerId, setEditingBenchPlayerId] = useState<string | null>(null);
 
   const getPlayer = (id: string | null) => allPlayers.find((p) => p.id === id);
 
@@ -45,20 +48,26 @@ export function ShiftPanel({
       onLockBench(quarter, shift, playerId);
     }
     setEditingSlot(null);
+    setEditingBenchPlayerId(null);
   };
 
   const handleClearLock = () => {
     if (editingSlot && editingSlot !== 'bench') {
       onUnlockSlot(quarter, shift, editingSlot);
+    } else if (editingSlot === 'bench' && editingBenchPlayerId) {
+      onUnlockBench(quarter, shift, editingBenchPlayerId);
     }
     setEditingSlot(null);
+    setEditingBenchPlayerId(null);
   };
 
   const shiftLabel = shift === 'shift1' ? '1st Shift' : '2nd Shift';
   const editingSlotLocked =
     editingSlot && editingSlot !== 'bench'
       ? (shiftRotation.positions[editingSlot]?.locked ?? false)
-      : false;
+      : editingSlot === 'bench' && editingBenchPlayerId
+        ? (shiftRotation.bench.find((s) => s.playerId === editingBenchPlayerId)?.locked ?? false)
+        : false;
 
   return (
     <div className="shift-panel">
@@ -81,7 +90,10 @@ export function ShiftPanel({
               <span
                 key={slot.playerId ?? i}
                 className={`bench-tag${slot.locked ? ' bench-tag--locked' : ''}`}
-                onClick={isClosed ? undefined : () => setEditingSlot('bench')}
+                onClick={isClosed ? undefined : () => {
+                  setEditingSlot('bench');
+                  setEditingBenchPlayerId(slot.playerId ?? null);
+                }}
                 style={isClosed ? { cursor: 'default' } : undefined}
               >
                 {p ? p.name : '—'}
@@ -106,8 +118,12 @@ export function ShiftPanel({
 
       {editingSlot && (
         <Modal
-          title={`${editingSlot === 'bench' ? 'Move to bench' : editingSlot} — ${quarter} ${shiftLabel}`}
-          onClose={() => setEditingSlot(null)}
+          title={
+            editingSlot === 'bench'
+              ? `${getPlayer(editingBenchPlayerId)?.name ?? 'Player'} — bench — ${quarter} ${shiftLabel}`
+              : `${editingSlot} — ${quarter} ${shiftLabel}`
+          }
+          onClose={() => { setEditingSlot(null); setEditingBenchPlayerId(null); }}
         >
           {editingSlotLocked && (
             <div className="modal-clear">
@@ -121,7 +137,7 @@ export function ShiftPanel({
             currentPlayerId={
               editingSlot !== 'bench'
                 ? shiftRotation.positions[editingSlot]?.playerId
-                : null
+                : editingBenchPlayerId
             }
             onSelect={handleSlotSelect}
             label="Or swap with:"

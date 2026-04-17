@@ -10,6 +10,7 @@ interface RotationGridProps {
   onLockSlot: (quarter: QuarterKey, half: ShiftKey, position: PositionName, playerId: string) => void;
   onUnlockSlot: (quarter: QuarterKey, half: ShiftKey, position: PositionName) => void;
   onLockBench: (quarter: QuarterKey, half: ShiftKey, playerId: string) => void;
+  onUnlockBench: (quarter: QuarterKey, half: ShiftKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
   onCloseShift: (quarter: QuarterKey, shift: ShiftKey) => void;
@@ -23,6 +24,7 @@ export function RotationGrid({
   onLockSlot,
   onUnlockSlot,
   onLockBench,
+  onUnlockBench,
   onLockGK,
   onUnlockGK,
   onCloseShift,
@@ -99,6 +101,7 @@ export function RotationGrid({
         onLockSlot={handleLockSlot}
         onUnlockSlot={onUnlockSlot}
         onLockBench={onLockBench}
+        onUnlockBench={onUnlockBench}
         onLockGK={handleLockGK}
         onUnlockGK={onUnlockGK}
         onCloseShift={onCloseShift}

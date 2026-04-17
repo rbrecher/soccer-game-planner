@@ -12,6 +12,7 @@ interface QuarterPanelProps {
   onLockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName, playerId: string) => void;
   onUnlockSlot: (quarter: QuarterKey, shift: ShiftKey, position: PositionName) => void;
   onLockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
+  onUnlockBench: (quarter: QuarterKey, shift: ShiftKey, playerId: string) => void;
   onLockGK: (quarter: QuarterKey, playerId: string) => void;
   onUnlockGK: (quarter: QuarterKey) => void;
   onCloseShift: (quarter: QuarterKey, shift: ShiftKey) => void;
@@ -27,6 +28,7 @@ export function QuarterPanel({
   onLockSlot,
   onUnlockSlot,
   onLockBench,
+  onUnlockBench,
   onLockGK,
   onUnlockGK,
   onCloseShift,
@@ -69,6 +71,7 @@ export function QuarterPanel({
           onLockSlot={onLockSlot}
           onUnlockSlot={onUnlockSlot}
           onLockBench={onLockBench}
+          onUnlockBench={onUnlockBench}
           onClose={() => onCloseShift(quarter, activeShift)}
           onReopen={() => onReopenShift(quarter, activeShift)}
         />
