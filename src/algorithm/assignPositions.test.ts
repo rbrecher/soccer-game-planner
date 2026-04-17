@@ -113,17 +113,16 @@ describe('assignPositions', () => {
     }
   });
 
-  it('counts locked-shift position in history so the player gets a different slot the next shift', () => {
-    // Use exactly 7 players so bench = 0 and all non-GK players must appear on field every shift.
+  it('player locked at a position in shift1 carries over to the same position in shift2 when bench=0', () => {
+    // Use exactly 7 players so bench = 0 and all non-GK players stay on field every shift.
+    // Carryover: a player remaining on field should keep their position from shift1 to shift2.
     const players = makeFullRoster(7);
     const availability = players.map((p) => makeAvailabilityAll(p.id));
     const { gkMap } = assignGoalies(players, availability, {});
     const benchMap = assignBench(players, availability, gkMap, {});
 
-    // Generate fresh grid to find which players are on field in Q1
     const freshGrid = assignPositions(players, availability, gkMap, benchMap, {});
 
-    // Pick any non-GK player to lock at Left Back in Q1/shift1
     const q1GkId = gkMap.Q1;
     const nonGkPlayer = players.find((p) => p.id !== q1GkId)!;
 
@@ -144,10 +143,9 @@ describe('assignPositions', () => {
 
     const newGrid = assignPositions(players, availability, gkMap, benchMap, existingGrid);
 
-    // With bench=0 and 7 players, non-GK players are always on field.
-    // Left Back lock in Q1/shift1 adds to position history.
-    // Q1/shift2 should assign a different player to Left Back.
-    expect(newGrid.Q1.shift2.positions['Left Back'].playerId).not.toBe(nonGkPlayer.id);
+    // With bench=0, all non-GK players remain on field in shift2, so all carry over.
+    // The locked player at Left Back in shift1 should also be at Left Back in shift2.
+    expect(newGrid.Q1.shift2.positions['Left Back'].playerId).toBe(nonGkPlayer.id);
   });
 
   it('does not assign bench players to field positions', () => {
@@ -164,6 +162,138 @@ describe('assignPositions', () => {
         }
       }
     }
+  });
+
+  describe('carryover: players remaining on field keep their position for shift2', () => {
+    it('player on field in both shifts keeps their position from shift1', () => {
+      const { grid } = runPipeline(10);
+
+      for (const q of QUARTERS) {
+        const shift2BenchIds = new Set(grid[q].shift2.bench.map((s) => s.playerId));
+
+        for (const pos of FIELD_POSITIONS) {
+          const pid = grid[q].shift1.positions[pos].playerId;
+          if (!pid) continue;
+          if (!shift2BenchIds.has(pid)) {
+            // Player stays on field — must occupy the same position in shift2
+            expect(grid[q].shift2.positions[pos].playerId).toBe(pid);
+          }
+        }
+      }
+    });
+
+    it('player who subs out in shift2 vacates their shift1 position', () => {
+      // With 8 players there will be bench slots, so some players sub out
+      const players = makeFullRoster(8);
+      const availability = players.map((p) => makeAvailabilityAll(p.id));
+      const { gkMap } = assignGoalies(players, availability, {});
+      const benchMap = assignBench(players, availability, gkMap, {});
+      const grid = assignPositions(players, availability, gkMap, benchMap, {});
+
+      let checkedAtLeastOne = false;
+      for (const q of QUARTERS) {
+        for (const pos of FIELD_POSITIONS) {
+          const pid = grid[q].shift1.positions[pos].playerId;
+          if (!pid) continue;
+          const subbedOut = grid[q].shift2.bench.some((s) => s.playerId === pid);
+          if (subbedOut) {
+            // Their shift1 position should be filled by someone else in shift2
+            expect(grid[q].shift2.positions[pos].playerId).not.toBe(pid);
+            checkedAtLeastOne = true;
+          }
+        }
+      }
+      expect(checkedAtLeastOne).toBe(true);
+    });
+
+    it('with no bench (7 players), shift2 field positions are identical to shift1', () => {
+      const players = makeFullRoster(7);
+      const availability = players.map((p) => makeAvailabilityAll(p.id));
+      const { gkMap } = assignGoalies(players, availability, {});
+      const benchMap = assignBench(players, availability, gkMap, {});
+      const grid = assignPositions(players, availability, gkMap, benchMap, {});
+
+      for (const q of QUARTERS) {
+        for (const pos of FIELD_POSITIONS) {
+          expect(grid[q].shift2.positions[pos].playerId).toBe(
+            grid[q].shift1.positions[pos].playerId,
+          );
+        }
+      }
+    });
+
+    it('positions reshuffle at the start of a new quarter even when there is no bench', () => {
+      const players = makeFullRoster(7);
+      const availability = players.map((p) => makeAvailabilityAll(p.id));
+      const { gkMap } = assignGoalies(players, availability, {});
+      const benchMap = assignBench(players, availability, gkMap, {});
+      const grid = assignPositions(players, availability, gkMap, benchMap, {});
+
+      // Collect non-GK field assignments for shift1 of each quarter
+      const fingerprints = QUARTERS.map((q) =>
+        FIELD_POSITIONS.map((pos) => `${pos}:${grid[q].shift1.positions[pos].playerId}`).join('|'),
+      );
+
+      // With variety tracking across quarters, not every quarter can be identical
+      const allIdentical = fingerprints.every((f) => f === fingerprints[0]);
+      expect(allIdentical).toBe(false);
+    });
+
+    it('hard lock in shift2 for a different player overrides carryover', () => {
+      const players = makeFullRoster(10);
+      const availability = players.map((p) => makeAvailabilityAll(p.id));
+      const { gkMap } = assignGoalies(players, availability, {});
+      const benchMap = assignBench(players, availability, gkMap, {});
+      const freshGrid = assignPositions(players, availability, gkMap, benchMap, {});
+
+      const gkId = gkMap.Q1;
+      const shift2BenchIds = new Set(freshGrid.Q1.shift2.bench.map((s) => s.playerId));
+
+      // Find any position whose shift1 player is NOT benched in shift2 (a natural carryover candidate)
+      let carryoverPos: (typeof FIELD_POSITIONS)[number] | null = null;
+      let carryoverCandidate: string | null = null;
+      for (const pos of FIELD_POSITIONS) {
+        const pid = freshGrid.Q1.shift1.positions[pos].playerId;
+        if (pid && !shift2BenchIds.has(pid)) {
+          carryoverPos = pos;
+          carryoverCandidate = pid;
+          break;
+        }
+      }
+      expect(carryoverCandidate).not.toBeNull();
+
+      // Pick a different on-field player to hard-lock at the same position in shift2
+      const override = players.find(
+        (p) =>
+          p.id !== gkId &&
+          p.id !== carryoverCandidate &&
+          !shift2BenchIds.has(p.id),
+      )!;
+
+      const existingGrid: Partial<RotationGrid> = {
+        Q1: {
+          gkPlayerId: gkMap.Q1,
+          gkLocked: false,
+          shift1: freshGrid.Q1.shift1,
+          shift2: {
+            ...freshGrid.Q1.shift2,
+            positions: {
+              ...freshGrid.Q1.shift2.positions,
+              [carryoverPos!]: { playerId: override.id, locked: true },
+            },
+          },
+        },
+      };
+
+      const newGrid = assignPositions(players, availability, gkMap, benchMap, existingGrid);
+      // Hard lock wins — override player holds the position
+      expect(newGrid.Q1.shift2.positions[carryoverPos!].playerId).toBe(override.id);
+      // Displaced carryover candidate must appear somewhere else on the field
+      const shift2FieldPids = FIELD_POSITIONS.map(
+        (pos) => newGrid.Q1.shift2.positions[pos].playerId,
+      );
+      expect(shift2FieldPids).toContain(carryoverCandidate);
+    });
   });
 
   it('does not assign unavailable players to field positions or bench', () => {
