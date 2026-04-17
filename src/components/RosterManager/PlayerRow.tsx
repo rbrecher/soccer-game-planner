@@ -64,6 +64,9 @@ export function PlayerRow({ player, playerSeasonPositions, onUpdate, onRemove }:
 
       {ALL_POSITIONS.some((pos) => (playerSeasonPositions[pos] ?? 0) > 0) && (
         <div className="player-row__season-stats">
+          <span className="season-stat season-stat--total">
+            Tot·{ALL_POSITIONS.reduce((sum, pos) => sum + (playerSeasonPositions[pos] ?? 0), 0)}
+          </span>
           {ALL_POSITIONS.filter((pos) => (playerSeasonPositions[pos] ?? 0) > 0).map((pos) => (
             <span key={pos} className="season-stat">
               {POSITION_ABBR[pos]}·{playerSeasonPositions[pos]}

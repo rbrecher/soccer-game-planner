@@ -180,6 +180,10 @@ body {
   letter-spacing: 0.2px;
 }
 
+.season-stat--total {
+  color: #555;
+}
+
 /* ── Game Setup ──────────────────────────────────────────────── */
 .game-setup__new-row {
   display: flex;
